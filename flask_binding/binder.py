@@ -43,9 +43,7 @@ class Binder(object):
 
             try:
                 param.prepare_context(context)
-
                 binder = Binder.binders[param.type]
-
                 value = binder.bind(context)
             except Exception as e:
                 raise InvalidArgumentError(name, e)
