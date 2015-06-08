@@ -54,6 +54,8 @@ class BaseBinder(ModelBinder):
 
 class PrimitiveBinder(BaseBinder):
     def _parse(self, context, value):
+        if isinstance(value, context.type):
+            return value
         return context.type(value)
 
 
