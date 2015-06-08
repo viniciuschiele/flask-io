@@ -41,11 +41,11 @@ class Binder(object):
             context.type = param.type
             context.multiple = param.multiple
 
-            param.prepare_context(context)
-
-            binder = Binder.binders[param.type]
-
             try:
+                param.prepare_context(context)
+
+                binder = Binder.binders[param.type]
+
                 value = binder.bind(context)
             except Exception as e:
                 raise InvalidArgumentError(name, e)

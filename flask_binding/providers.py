@@ -49,7 +49,8 @@ class FromBody(ParamProvider):
         data = request.get_data(as_text=True)
 
         if request.content_type == 'application/json':
-            data = json.loads(data)
+            if data != '':
+                data = json.loads(data)
 
         context.values = {context.name: data}
 
