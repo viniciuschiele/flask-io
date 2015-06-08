@@ -87,3 +87,17 @@ class TestInteger(TestCase):
                                            data=json.dumps(data),
                                            content_type='application/json'):
             self.assertEqual(Binder.bind({'param1': FromBody(dict)}), {'param1': data})
+
+    def test_invalid_body_as_json(self):
+        with self.app.test_request_context('/resource', method='post',
+                                           data='abc',
+                                           content_type='application/json'):
+            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromBody(dict)})
+
+    def test_missing_body_as_json(self):
+        with self.app.test_request_context('/resource', method='post', content_type='application/json'):
+            self.assertEqual(Binder.bind({'param1': FromQuery(int)}), {'param1': None})
+
+    def test_missing_required_body_as_json(self):
+        with self.app.test_request_context('/resource', method='post', content_type='application/json'):
+            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromBody(dict, required=True)})

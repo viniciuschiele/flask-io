@@ -24,7 +24,7 @@ class TestInteger(TestCase):
         self.binder = PrimitiveBinder()
 
     def test_valid_value(self):
-        context = BindingContext(int, 'param1', {'param1': 10})
+        context = BindingContext(int, 'param1', {'param1': '10'})
         self.assertEqual(self.binder.bind(context), 10)
 
     def test_invalid_value(self):
@@ -36,15 +36,15 @@ class TestInteger(TestCase):
         self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
-        context = BindingContext(int, 'param1', {'param2': 1})
+        context = BindingContext(int, 'param1', {'param2': '1'})
         self.assertEqual(self.binder.bind(context), None)
 
     def test_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', 1), ('param1', 2)])
+        params = ImmutableMultiDict([('param1', '1'), ('param1', '2')])
         context = BindingContext(int, 'param1', params, multiple=True)
         self.assertEqual(self.binder.bind(context), [1, 2])
 
     def test_invalid_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', 1), ('param1', 'a')])
+        params = ImmutableMultiDict([('param1', '1'), ('param1', 'a')])
         context = BindingContext(int, 'param1', params, multiple=True)
         self.assertRaises(Exception, self.binder.bind, context)
