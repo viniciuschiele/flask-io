@@ -14,6 +14,6 @@
 
 
 from .binder import Binder
-from .parameters import bind
-from .parameters import FromBody
-from .parameters import FromQuery
+from .providers import bind
+from .providers import FromBody
+from .providers import FromQuery
