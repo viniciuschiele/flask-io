@@ -16,4 +16,6 @@
 from .binder import Binder
 from .providers import bind
 from .providers import FromBody
+from .providers import FromForm
+from .providers import FromHeader
 from .providers import FromQuery
