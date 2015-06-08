@@ -1,7 +1,7 @@
 =================================
 Flask Binding
 =================================
-Flask Binding is a library for Python 3+ which parse the arguments from the Flask request and turns them into method parameters.
+Flask Binding is a library for Python 3+ which parses the arguments from the Flask request and turns them into method parameters.
 
 Documentation
 ===============
