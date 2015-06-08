@@ -41,6 +41,35 @@ class PrimitiveBinder(ModelBinder):
         return ret
 
 
+class BooleanBinder(ModelBinder):
+    TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
+
+    def bind(self, context):
+        if context.multiple:
+            return self.bind_multiple(context)
+
+        return self.bind_single(context)
+
+    def bind_single(self, context):
+        value = context.values.get(context.name)
+
+        if value is None:
+            return None
+
+        return value.lower() in self.TRUE_VALUES
+
+    def bind_multiple(self, context):
+        values = context.values.getlist(context.name)
+
+        if len(values) == 0:
+            return None
+
+        ret = []
+        for value in values:
+            ret.append(value.lower() in self.TRUE_VALUES)
+        return ret
+
+
 class DateTimeBinder(ModelBinder):
     def bind(self, context):
         if context.multiple:
