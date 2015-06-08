@@ -9,7 +9,7 @@ Soon... take a look at the examples_ to see how it works.
 
 Installation
 ===============
-You can install SimpleBus via Python Package Index (PyPi_),::
+You can install Flask Binding via Python Package Index (PyPi_),::
 
     $ pip install flask-binding
 
