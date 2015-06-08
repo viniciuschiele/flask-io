@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 
 from flask import request
 from .binder import Binder
+
 
 def bind(params):
     def decorator(func):
@@ -25,7 +27,7 @@ def bind(params):
     return decorator
 
 
-class ValueProvider(object):
+class ParamProvider(object):
     def __init__(self, type_, name=None, default=None, required=False, multiple=False):
         self.type = type_
         self.name = name
@@ -33,10 +35,20 @@ class ValueProvider(object):
         self.required = required
         self.multiple = multiple
 
-    def get_values(self):
+    def prepare_context(self, context):
         pass
 
 
-class FromQuery(ValueProvider):
-    def get_values(self):
-        return request.args
+class FromQuery(ParamProvider):
+    def prepare_context(self, context):
+        context.values = request.args
+
+
+class FromBody(ParamProvider):
+    def prepare_context(self, context):
+        data = request.get_data(as_text=True)
+
+        if request.content_type == 'application/json':
+            data = json.loads(data)
+
+        context.values = {context.name: data}

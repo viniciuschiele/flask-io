@@ -15,6 +15,7 @@
 from datetime import datetime
 from .binders import BooleanBinder
 from .binders import DateTimeBinder
+from .binders import DictionaryBinder
 from .binders import PrimitiveBinder
 from .errors import InvalidArgumentError
 from .errors import RequiredArgumentError
@@ -23,7 +24,9 @@ from .errors import RequiredArgumentError
 class Binder(object):
     binders = {
         bool: BooleanBinder(),
+        dict: DictionaryBinder(),
         int: PrimitiveBinder(),
+        float: PrimitiveBinder(),
         str: PrimitiveBinder(),
         datetime: DateTimeBinder()
     }
@@ -37,7 +40,8 @@ class Binder(object):
             context.name = param.name or name
             context.type = param.type
             context.multiple = param.multiple
-            context.values = param.get_values()
+
+            param.prepare_context(context)
 
             binder = Binder.binders[param.type]
 

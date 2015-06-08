@@ -20,16 +20,22 @@ class ModelBinder(object):
         pass
 
 
-class PrimitiveBinder(ModelBinder):
+class BaseBinder(ModelBinder):
     def bind(self, context):
-        if not context.multiple:
-            value = context.values.get(context.name)
+        if context.multiple:
+            return self._bind_multiple(context)
 
-            if value is None:
-                return None
+        return self._bind_single(context)
 
-            return context.type(value)
+    def _bind_single(self, context):
+        value = context.values.get(context.name)
 
+        if value is None or value == '':
+            return None
+
+        return self._parse(context, value)
+
+    def _bind_multiple(self, context):
         values = context.values.getlist(context.name)
 
         if len(values) == 0:
@@ -37,64 +43,37 @@ class PrimitiveBinder(ModelBinder):
 
         ret = []
         for value in values:
-            ret.append(context.type(value))
+            if value is None or value == '':
+                continue
+            ret.append(self._parse(context, value))
         return ret
 
+    def _parse(self, context, value):
+        raise NotImplementedError()
 
-class BooleanBinder(ModelBinder):
+
+class PrimitiveBinder(BaseBinder):
+    def _parse(self, context, value):
+        return context.type(value)
+
+
+class BooleanBinder(BaseBinder):
     TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
 
-    def bind(self, context):
-        if context.multiple:
-            return self.bind_multiple(context)
-
-        return self.bind_single(context)
-
-    def bind_single(self, context):
-        value = context.values.get(context.name)
-
-        if value is None:
-            return None
+    def _parse(self, context, value):
+        if isinstance(value, bool):
+            return value
 
         return value.lower() in self.TRUE_VALUES
 
-    def bind_multiple(self, context):
-        values = context.values.getlist(context.name)
 
-        if len(values) == 0:
-            return None
-
-        ret = []
-        for value in values:
-            ret.append(value.lower() in self.TRUE_VALUES)
-        return ret
-
-
-class DateTimeBinder(ModelBinder):
-    def bind(self, context):
-        if context.multiple:
-            return self.bind_multiple(context)
-
-        return self.bind_single(context)
-
-    def bind_single(self, context):
-        value = context.values.get(context.name)
-
-        if value is None:
-            return None
-
-        if value == '':
-            raise ValueError('value cannot be empty.')
-
+class DateTimeBinder(BaseBinder):
+    def _parse(self, context, value):
         return dateutil.parser.parse(value)
 
-    def bind_multiple(self, context):
-        values = context.values.getlist(context.name)
 
-        if len(values) == 0:
-            return None
-
-        ret = []
-        for value in values:
-            ret.append(dateutil.parser.parse(value))
-        return ret
+class DictionaryBinder(BaseBinder):
+    def _parse(self, context, value):
+        if isinstance(value, dict):
+            return value
+        raise TypeError('value is not a dictionary')
