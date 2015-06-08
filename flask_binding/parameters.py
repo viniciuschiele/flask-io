@@ -52,3 +52,8 @@ class FromBody(ParamProvider):
             data = json.loads(data)
 
         context.values = {context.name: data}
+
+
+class FromForm(ParamProvider):
+    def prepare_context(self, context):
+        context.values = request.form
