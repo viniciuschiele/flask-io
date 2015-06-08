@@ -33,7 +33,7 @@ class BaseBinder(ParamBinder):
         if value is None or value == '':
             return None
 
-        return self._parse(context, value)
+        return self._parse(value)
 
     def _bind_multiple(self, context):
         values = context.values.getlist(context.name)
@@ -45,24 +45,27 @@ class BaseBinder(ParamBinder):
         for value in values:
             if value is None or value == '':
                 continue
-            ret.append(self._parse(context, value))
+            ret.append(self._parse(value))
         return ret
 
-    def _parse(self, context, value):
+    def _parse(self, value):
         raise NotImplementedError()
 
 
 class PrimitiveBinder(BaseBinder):
-    def _parse(self, context, value):
-        if isinstance(value, context.type):
+    def __init__(self, type_):
+        self.type = type_
+
+    def _parse(self, value):
+        if isinstance(value, self.type):
             return value
-        return context.type(value)
+        return self.type(value)
 
 
 class BooleanBinder(BaseBinder):
     TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
 
-    def _parse(self, context, value):
+    def _parse(self, value):
         if isinstance(value, bool):
             return value
 
@@ -70,12 +73,12 @@ class BooleanBinder(BaseBinder):
 
 
 class DateTimeBinder(BaseBinder):
-    def _parse(self, context, value):
+    def _parse(self, value):
         return dateutil.parser.parse(value)
 
 
 class DictionaryBinder(BaseBinder):
-    def _parse(self, context, value):
+    def _parse(self, value):
         if isinstance(value, dict):
             return value
         raise TypeError('value is not a dictionary')

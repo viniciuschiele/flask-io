@@ -25,9 +25,9 @@ class Binder(object):
     binders = {
         bool: BooleanBinder(),
         dict: DictionaryBinder(),
-        int: PrimitiveBinder(),
-        float: PrimitiveBinder(),
-        str: PrimitiveBinder(),
+        int: PrimitiveBinder(int),
+        float: PrimitiveBinder(float),
+        str: PrimitiveBinder(str),
         datetime: DateTimeBinder()
     }
 
@@ -61,8 +61,7 @@ class Binder(object):
 
 
 class BindingContext(object):
-    def __init__(self, type_=None, name=None, values=None, multiple=False):
-        self.type = type_
+    def __init__(self, name=None, values=None, multiple=False):
         self.name = name
         self.values = values
         self.multiple = multiple

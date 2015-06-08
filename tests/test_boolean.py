@@ -24,30 +24,30 @@ class TestBoolean(TestCase):
         self.binder = BooleanBinder()
 
     def test_valid_value(self):
-        context = BindingContext(int, 'param1', {'param1': 'true'})
+        context = BindingContext('param1', {'param1': 'true'})
         self.assertEqual(self.binder.bind(context), True)
 
-        context = BindingContext(int, 'param1', {'param1': 'True'})
+        context = BindingContext('param1', {'param1': 'True'})
         self.assertEqual(self.binder.bind(context), True)
 
     def test_invalid_value(self):
-        context = BindingContext(int, 'param1', {'param1': 'abc'})
+        context = BindingContext('param1', {'param1': 'abc'})
         self.assertEqual(self.binder.bind(context), False)
 
     def test_empty_value(self):
-        context = BindingContext(int, 'param1', {'param1': ''})
+        context = BindingContext('param1', {'param1': ''})
         self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
-        context = BindingContext(int, 'param1', {'param2': 1})
+        context = BindingContext('param1', {'param2': 1})
         self.assertEqual(self.binder.bind(context), None)
 
     def test_multiple_parameters(self):
         params = ImmutableMultiDict([('param1', 'T'), ('param1', 'True')])
-        context = BindingContext(int, 'param1', params, multiple=True)
+        context = BindingContext('param1', params, multiple=True)
         self.assertEqual(self.binder.bind(context), [True, True])
 
     def test_invalid_multiple_parameters(self):
         params = ImmutableMultiDict([('param1', 'true'), ('param1', 'abc')])
-        context = BindingContext(int, 'param1', params, multiple=True)
+        context = BindingContext('param1', params, multiple=True)
         self.assertEqual(self.binder.bind(context), [True, False])

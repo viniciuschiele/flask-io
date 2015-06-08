@@ -25,19 +25,19 @@ class TestDateTime(TestCase):
         self.binder = DateTimeBinder()
 
     def test_valid_value(self):
-        context = BindingContext(datetime, 'param1', {'param1': '2015-06-08T09:47:43'})
+        context = BindingContext('param1', {'param1': '2015-06-08T09:47:43'})
         self.assertEqual(self.binder.bind(context), datetime(2015, 6, 8, 9, 47, 43))
 
     def test_invalid_value(self):
-        context = BindingContext(int, 'param1', {'param1': 'a'})
+        context = BindingContext('param1', {'param1': 'a'})
         self.assertRaises(Exception, self.binder.bind, context)
 
     def test_empty_value(self):
-        context = BindingContext(int, 'param1', {'param1': ''})
+        context = BindingContext('param1', {'param1': ''})
         self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
-        context = BindingContext(int, 'param1', {'param2': 1})
+        context = BindingContext('param1', {'param2': 1})
         self.assertEqual(self.binder.bind(context), None)
 
     def test_multiple_parameters(self):
@@ -45,10 +45,10 @@ class TestDateTime(TestCase):
         date2 = datetime(2015, 6, 9, 9, 47, 43)
 
         params = ImmutableMultiDict([('param1', '2015-06-08T09:47:43'), ('param1', '2015-06-09T09:47:43')])
-        context = BindingContext(int, 'param1', params, multiple=True)
+        context = BindingContext('param1', params, multiple=True)
         self.assertEqual(self.binder.bind(context), [date1, date2])
 
     def test_invalid_multiple_parameters(self):
         params = ImmutableMultiDict([('param1', 1), ('param1', 'a')])
-        context = BindingContext(int, 'param1', params, multiple=True)
+        context = BindingContext('param1', params, multiple=True)
         self.assertRaises(Exception, self.binder.bind, context)
