@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 
 from flask import Flask
 from flask_binding import Binder
+from flask_binding import FromBody
 from flask_binding import FromQuery
 from flask_binding.errors import InvalidArgumentError
 from flask_binding.errors import RequiredArgumentError
@@ -48,7 +50,7 @@ class TestInteger(TestCase):
 
     def test_empty_parameter(self):
         with self.app.test_request_context('/resource?param1=', method='get'):
-            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int)})
+            self.assertEqual(Binder.bind({'param1': FromQuery(int)}), {'param1': None})
 
     def test_missing_required_parameter(self):
         with self.app.test_request_context('/resource', method='post'):
@@ -56,7 +58,7 @@ class TestInteger(TestCase):
 
     def test_empty_required_parameter(self):
         with self.app.test_request_context('/resource?param1=', method='get'):
-            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int, required=True)})
+            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromQuery(int, required=True)})
 
     def test_multiple_parameters(self):
         with self.app.test_request_context('/resource?param1=1&param1=2', method='get'):
@@ -72,4 +74,16 @@ class TestInteger(TestCase):
 
     def test_missing_required_multiple_parameters(self):
         with self.app.test_request_context('/resource', method='get'):
-            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromQuery(int, multiple=True, required=True)})
+            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromQuery(int,
+                                                                                       multiple=True,
+                                                                                       required=True)})
+
+    def test_body_as_json(self):
+        data = {
+            'key1': 1,
+            'key2': '2'
+        }
+        with self.app.test_request_context('/resource', method='post',
+                                           data=json.dumps(data),
+                                           content_type='application/json'):
+            self.assertEqual(Binder.bind({'param1': FromBody(dict)}), {'param1': data})

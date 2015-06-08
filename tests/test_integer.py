@@ -33,7 +33,7 @@ class TestInteger(TestCase):
 
     def test_empty_value(self):
         context = BindingContext(int, 'param1', {'param1': ''})
-        self.assertRaises(Exception, self.binder.bind, context)
+        self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
         context = BindingContext(int, 'param1', {'param2': 1})
