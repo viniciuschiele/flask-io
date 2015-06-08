@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import dateutil.parser
+
 
 class ModelBinder(object):
     def bind(self, context):
@@ -28,6 +30,36 @@ class PrimitiveBinder(ModelBinder):
 
             return context.type(value)
 
+        values = context.values.getlist(context.name)
+
+        if len(values) == 0:
+            return None
+
+        ret = []
+        for value in values:
+            ret.append(context.type(value))
+        return ret
+
+
+class DateTimeBinder(ModelBinder):
+    def bind(self, context):
+        if context.multiple:
+            return self.bind_multiple(context)
+
+        return self.bind_single(context)
+
+    def bind_single(self, context):
+        value = context.values.get(context.name)
+
+        if value is None:
+            return None
+
+        if value == '':
+            raise ValueError('value cannot be empty.')
+
+        return dateutil.parser.parse(value)
+
+    def bind_multiple(self, context):
         values = context.values.getlist(context.name)
 
         if len(values) == 0:

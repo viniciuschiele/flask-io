@@ -15,8 +15,9 @@
 
 from flask import Flask
 from flask_binding import Binder
-from flask_binding import EvaluationError
 from flask_binding import FromQuery
+from flask_binding.errors import InvalidArgumentError
+from flask_binding.errors import RequiredArgumentError
 from unittest import TestCase
 
 
@@ -31,7 +32,7 @@ class TestInteger(TestCase):
 
     def test_invalid_value(self):
         with self.app.test_request_context('/resource?param1=a', method='post'):
-            self.assertRaises(EvaluationError, Binder.bind, {'param1': FromQuery(int)})
+            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int)})
 
     def test_custom_name(self):
         with self.app.test_request_context('/resource?param2=1', method='get'):
@@ -47,15 +48,15 @@ class TestInteger(TestCase):
 
     def test_empty_parameter(self):
         with self.app.test_request_context('/resource?param1=', method='get'):
-            self.assertRaises(EvaluationError, Binder.bind, {'param1': FromQuery(int)})
+            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int)})
 
     def test_missing_required_parameter(self):
         with self.app.test_request_context('/resource', method='post'):
-            self.assertRaises(EvaluationError, Binder.bind, {'param1': FromQuery(int, required=True)})
+            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromQuery(int, required=True)})
 
     def test_empty_required_parameter(self):
         with self.app.test_request_context('/resource?param1=', method='get'):
-            self.assertRaises(EvaluationError, Binder.bind, {'param1': FromQuery(int, required=True)})
+            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int, required=True)})
 
     def test_multiple_parameters(self):
         with self.app.test_request_context('/resource?param1=1&param1=2', method='get'):
@@ -63,7 +64,7 @@ class TestInteger(TestCase):
 
     def test_invalid_multiple_parameters(self):
         with self.app.test_request_context('/resource?param1=1&param1=a', method='get'):
-            self.assertRaises(EvaluationError, Binder.bind, {'param1': FromQuery(int, multiple=True)})
+            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int, multiple=True)})
 
     def test_missing_multiple_parameters(self):
         with self.app.test_request_context('/resource', method='get'):
@@ -71,4 +72,4 @@ class TestInteger(TestCase):
 
     def test_missing_required_multiple_parameters(self):
         with self.app.test_request_context('/resource', method='get'):
-            self.assertRaises(EvaluationError, Binder.bind, {'param1': FromQuery(int, multiple=True, required=True)})
+            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromQuery(int, multiple=True, required=True)})

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from datetime import datetime
 from .binders import PrimitiveBinder
 from .errors import InvalidArgumentError
 from .errors import RequiredArgumentError
@@ -21,7 +21,8 @@ from .errors import RequiredArgumentError
 class Binder(object):
     binders = {
         int: PrimitiveBinder(),
-        str: PrimitiveBinder()
+        str: PrimitiveBinder(),
+        datetime: PrimitiveBinder()
     }
 
     @staticmethod
