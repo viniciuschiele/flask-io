@@ -15,12 +15,12 @@
 import dateutil.parser
 
 
-class ModelBinder(object):
+class ParamBinder(object):
     def bind(self, context):
         pass
 
 
-class BaseBinder(ModelBinder):
+class BaseBinder(ParamBinder):
     def bind(self, context):
         if context.multiple:
             return self._bind_multiple(context)
