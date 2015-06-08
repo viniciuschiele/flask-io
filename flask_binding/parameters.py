@@ -57,3 +57,8 @@ class FromBody(ParamProvider):
 class FromForm(ParamProvider):
     def prepare_context(self, context):
         context.values = request.form
+
+
+class FromHeader(ParamProvider):
+    def prepare_context(self, context):
+        context.values = request.headers
