@@ -67,5 +67,5 @@ class DateTimeBinder(ModelBinder):
 
         ret = []
         for value in values:
-            ret.append(context.type(value))
+            ret.append(dateutil.parser.parse(value))
         return ret
