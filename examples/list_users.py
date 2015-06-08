@@ -23,21 +23,21 @@ from flask_binding.errors import RequiredArgumentError
 app = Flask(__name__)
 app.debug = True
 
-@app.route('/people')
+@app.route('/users')
 @bind({'name': FromQuery(str),
        'max_results': FromQuery(int, default=10)})
-def list_people(name, max_results):
-    people = []
+def list_users(name, max_results):
+    users = []
 
     for i in range(max_results):
-        people.append({
-            'name': 'person' + str(i)
+        users.append({
+            'name': 'user' + str(i)
         })
 
     if name:
-        people = [person for person in people if person.get('name').startswith(name)]
+        users = [user for user in users if user.get('name').startswith(name)]
 
-    return jsonify(people=people)
+    return jsonify(users=users)
 
 @app.errorhandler(InvalidArgumentError)
 def error_handler(error):
