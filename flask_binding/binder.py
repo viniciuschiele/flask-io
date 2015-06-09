@@ -50,7 +50,7 @@ class Binder(object):
 
             if value is None:
                 if param.required:
-                    raise RequiredArgumentError(name)
+                    raise RequiredArgumentError(name, 'Argument %s is missing.' % context.name)
                 value = param.default
 
             kwargs[name] = value

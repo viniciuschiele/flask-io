@@ -19,11 +19,11 @@ class BindingError(Exception):
 
 class InvalidArgumentError(BindingError):
     def __init__(self, arg_name, *args, **kwargs):
-        super().__init__(args, kwargs)
+        super().__init__(arg_name, args, kwargs)
         self.arg_name = arg_name
 
 
 class RequiredArgumentError(BindingError):
-    def __init__(self, arg_name, *args, **kwargs):
-        super().__init__(args, kwargs)
+    def __init__(self, arg_name, message):
+        super().__init__(arg_name, message)
         self.arg_name = arg_name
