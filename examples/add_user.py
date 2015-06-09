@@ -34,13 +34,13 @@ def add_user(user):
     return Response(status=204)
 
 @app.errorhandler(InvalidArgumentError)
-def error_handler(error):
+def invalid_argument_handler(error):
     response = jsonify(error_message='Argument %s is invalid' % error.arg_name)
     response.status_code = 400
     return response
 
 @app.errorhandler(RequiredArgumentError)
-def error_handler(error):
+def required_argument_handler(error):
     response = jsonify(error_message='Argument %s is missing' % error.arg_name)
     response.status_code = 400
     return response
