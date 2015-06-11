@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import json
 
 from flask import request
@@ -20,6 +21,7 @@ from .binder import Binder
 
 def bind(params):
     def decorator(func):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             kwargs.update(Binder.bind(params))
             return func(*args, **kwargs)
