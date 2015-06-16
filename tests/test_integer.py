@@ -13,10 +13,10 @@
 # limitations under the License.
 
 
-from werkzeug.datastructures import ImmutableMultiDict
 from flask_binding.binder import BindingContext
 from flask_binding.binders import PrimitiveBinder
 from unittest import TestCase
+from tests.common import TestSource
 
 
 class TestInteger(TestCase):
@@ -24,27 +24,39 @@ class TestInteger(TestCase):
         self.binder = PrimitiveBinder(int)
 
     def test_valid_value(self):
-        context = BindingContext('param1', {'param1': '10'})
+        source = TestSource()
+        source.add('param1', '10')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), 10)
 
     def test_invalid_value(self):
-        context = BindingContext('param1', {'param1': 'a'})
+        source = TestSource()
+        source.add('param1', 'a')
+        context = BindingContext('param1', source)
         self.assertRaises(Exception, self.binder.bind, context)
 
     def test_empty_value(self):
-        context = BindingContext('param1', {'param1': ''})
+        source = TestSource()
+        source.add('param1', '')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
-        context = BindingContext('param1', {'param2': '1'})
+        source = TestSource()
+        source.add('param2', '1')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), None)
 
     def test_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', '1'), ('param1', '2')])
-        context = BindingContext('param1', params, multiple=True)
+        source = TestSource(multiple=True)
+        source.add('param1', '1')
+        source.add('param1', '2')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), [1, 2])
 
     def test_invalid_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', '1'), ('param1', 'a')])
-        context = BindingContext('param1', params, multiple=True)
+        source = TestSource(multiple=True)
+        source.add('param1', '1')
+        source.add('param1', 'a')
+        context = BindingContext('param1', source)
         self.assertRaises(Exception, self.binder.bind, context)

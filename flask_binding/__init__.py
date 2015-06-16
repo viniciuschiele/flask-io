@@ -14,8 +14,8 @@
 
 
 from .binder import Binder
-from .providers import bind
-from .providers import FromBody
-from .providers import FromForm
-from .providers import FromHeader
-from .providers import FromQuery
+from .binder import bind
+from .sources import FromBody
+from .sources import FromForm
+from .sources import FromHeader
+from .sources import FromQuery

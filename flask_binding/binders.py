@@ -14,21 +14,25 @@
 
 import dateutil.parser
 
+from abc import ABCMeta
+from abc import abstractmethod
 
-class ParamBinder(object):
+
+class ModelBinder(metaclass=ABCMeta):
+    @abstractmethod
     def bind(self, context):
         pass
 
 
-class BaseBinder(ParamBinder):
+class BaseModelBinder(ModelBinder):
     def bind(self, context):
-        if context.multiple:
+        if context.source.multiple:
             return self._bind_multiple(context)
 
         return self._bind_single(context)
 
     def _bind_single(self, context):
-        value = context.values.get(context.name)
+        value = context.source.get_value(context.name)
 
         if value is None or value == '':
             return None
@@ -36,7 +40,7 @@ class BaseBinder(ParamBinder):
         return self._parse(value)
 
     def _bind_multiple(self, context):
-        values = context.values.getlist(context.name)
+        values = context.source.get_values(context.name)
 
         if len(values) == 0:
             return None
@@ -52,7 +56,7 @@ class BaseBinder(ParamBinder):
         raise NotImplementedError()
 
 
-class PrimitiveBinder(BaseBinder):
+class PrimitiveBinder(BaseModelBinder):
     def __init__(self, type_):
         self.type = type_
 
@@ -62,7 +66,7 @@ class PrimitiveBinder(BaseBinder):
         return self.type(value)
 
 
-class BooleanBinder(BaseBinder):
+class BooleanBinder(BaseModelBinder):
     TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
 
     def _parse(self, value):
@@ -72,12 +76,12 @@ class BooleanBinder(BaseBinder):
         return value.lower() in self.TRUE_VALUES
 
 
-class DateTimeBinder(BaseBinder):
+class DateTimeBinder(BaseModelBinder):
     def _parse(self, value):
         return dateutil.parser.parse(value)
 
 
-class DictionaryBinder(BaseBinder):
+class DictionaryBinder(BaseModelBinder):
     def _parse(self, value):
         if isinstance(value, dict):
             return value

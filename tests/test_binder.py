@@ -74,9 +74,8 @@ class TestInteger(TestCase):
 
     def test_missing_required_multiple_parameters(self):
         with self.app.test_request_context('/resource', method='get'):
-            self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromQuery(int,
-                                                                                       multiple=True,
-                                                                                       required=True)})
+            self.assertRaises(RequiredArgumentError, Binder.bind,
+                              {'param1': FromQuery(int, multiple=True, required=True)})
 
     def test_body_as_json(self):
         data = {
@@ -96,7 +95,7 @@ class TestInteger(TestCase):
 
     def test_missing_body_as_json(self):
         with self.app.test_request_context('/resource', method='post', content_type='application/json'):
-            self.assertEqual(Binder.bind({'param1': FromQuery(int)}), {'param1': None})
+            self.assertEqual(Binder.bind({'param1': FromBody(dict)}), {'param1': None})
 
     def test_missing_required_body_as_json(self):
         with self.app.test_request_context('/resource', method='post', content_type='application/json'):

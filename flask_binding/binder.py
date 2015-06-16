@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 from datetime import datetime
 from .binders import BooleanBinder
 from .binders import DateTimeBinder
@@ -19,6 +21,16 @@ from .binders import DictionaryBinder
 from .binders import PrimitiveBinder
 from .errors import InvalidArgumentError
 from .errors import RequiredArgumentError
+
+
+def bind(params):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            kwargs.update(Binder.bind(params))
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 class Binder(object):
@@ -35,23 +47,19 @@ class Binder(object):
     def bind(params):
         kwargs = {}
 
-        for name, param in params.items():
-            context = BindingContext()
-            context.name = param.name or name
-            context.type = param.type
-            context.multiple = param.multiple
+        for name, source in params.items():
+            context = BindingContext(source.name or name, source)
 
             try:
-                param.prepare_context(context)
-                binder = Binder.binders[param.type]
+                binder = Binder.binders[source.type]
                 value = binder.bind(context)
             except Exception as e:
                 raise InvalidArgumentError(name, e)
 
             if value is None:
-                if param.required:
+                if source.required:
                     raise RequiredArgumentError(name, 'Argument %s is missing.' % context.name)
-                value = param.default
+                value = source.default
 
             kwargs[name] = value
 
@@ -59,7 +67,6 @@ class Binder(object):
 
 
 class BindingContext(object):
-    def __init__(self, name=None, values=None, multiple=False):
+    def __init__(self, name, source):
         self.name = name
-        self.values = values
-        self.multiple = multiple
+        self.source = source

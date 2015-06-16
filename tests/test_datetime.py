@@ -17,7 +17,7 @@ from datetime import datetime
 from flask_binding.binder import BindingContext
 from flask_binding.binders import DateTimeBinder
 from unittest import TestCase
-from werkzeug.datastructures import ImmutableMultiDict
+from tests.common import TestSource
 
 
 class TestDateTime(TestCase):
@@ -25,30 +25,42 @@ class TestDateTime(TestCase):
         self.binder = DateTimeBinder()
 
     def test_valid_value(self):
-        context = BindingContext('param1', {'param1': '2015-06-08T09:47:43'})
+        source = TestSource()
+        source.add('param1', '2015-06-08T09:47:43')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), datetime(2015, 6, 8, 9, 47, 43))
 
     def test_invalid_value(self):
-        context = BindingContext('param1', {'param1': 'a'})
+        source = TestSource()
+        source.add('param1', 'a')
+        context = BindingContext('param1', source)
         self.assertRaises(Exception, self.binder.bind, context)
 
     def test_empty_value(self):
-        context = BindingContext('param1', {'param1': ''})
+        source = TestSource()
+        source.add('param1', '')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
-        context = BindingContext('param1', {'param2': 1})
+        source = TestSource()
+        source.add('param2', '1')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), None)
 
     def test_multiple_parameters(self):
         date1 = datetime(2015, 6, 8, 9, 47, 43)
         date2 = datetime(2015, 6, 9, 9, 47, 43)
 
-        params = ImmutableMultiDict([('param1', '2015-06-08T09:47:43'), ('param1', '2015-06-09T09:47:43')])
-        context = BindingContext('param1', params, multiple=True)
+        source = TestSource(multiple=True)
+        source.add('param1', '2015-06-08T09:47:43')
+        source.add('param1', '2015-06-09T09:47:43')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), [date1, date2])
 
     def test_invalid_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', 1), ('param1', 'a')])
-        context = BindingContext('param1', params, multiple=True)
+        source = TestSource(multiple=True)
+        source.add('param1', 'a')
+        source.add('param1', 'b')
+        context = BindingContext('param1', source)
         self.assertRaises(Exception, self.binder.bind, context)

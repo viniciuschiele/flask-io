@@ -16,7 +16,7 @@
 from flask_binding.binder import BindingContext
 from flask_binding.binders import BooleanBinder
 from unittest import TestCase
-from werkzeug.datastructures import ImmutableMultiDict
+from tests.common import TestSource
 
 
 class TestBoolean(TestCase):
@@ -24,30 +24,39 @@ class TestBoolean(TestCase):
         self.binder = BooleanBinder()
 
     def test_valid_value(self):
-        context = BindingContext('param1', {'param1': 'true'})
-        self.assertEqual(self.binder.bind(context), True)
-
-        context = BindingContext('param1', {'param1': 'True'})
+        source = TestSource()
+        source.add('param1', 'true')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), True)
 
     def test_invalid_value(self):
-        context = BindingContext('param1', {'param1': 'abc'})
+        source = TestSource()
+        source.add('param1', 'abc')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), False)
 
     def test_empty_value(self):
-        context = BindingContext('param1', {'param1': ''})
+        source = TestSource()
+        source.add('param1', '')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), None)
 
     def test_missing_argument(self):
-        context = BindingContext('param1', {'param2': 1})
+        source = TestSource()
+        source.add('param2', '1')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), None)
 
     def test_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', 'T'), ('param1', 'True')])
-        context = BindingContext('param1', params, multiple=True)
+        source = TestSource(multiple=True)
+        source.add('param1', 'T')
+        source.add('param1', 'True')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), [True, True])
 
     def test_invalid_multiple_parameters(self):
-        params = ImmutableMultiDict([('param1', 'true'), ('param1', 'abc')])
-        context = BindingContext('param1', params, multiple=True)
+        source = TestSource(multiple=True)
+        source.add('param1', 'true')
+        source.add('param1', 'abc')
+        context = BindingContext('param1', source)
         self.assertEqual(self.binder.bind(context), [True, False])
