@@ -36,6 +36,14 @@ class FromBody(BindingSource):
         raise NotImplementedError('get_values is not supported.')
 
 
+class FromCookie(BindingSource):
+    def get_value(self, key):
+        return request.cookies.get(key)
+
+    def get_values(self, key):
+        return request.cookies.getlist(key)
+
+
 class FromForm(BindingSource):
     def get_value(self, key):
         return request.form.get(key)
