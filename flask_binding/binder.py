@@ -15,6 +15,7 @@
 import functools
 
 from datetime import datetime
+from inspect import isfunction
 from .binders import BooleanBinder
 from .binders import DateTimeBinder
 from .binders import DictionaryBinder
@@ -59,7 +60,11 @@ class Binder(object):
             if value is None:
                 if source.required:
                     raise RequiredArgumentError(name, 'Argument %s is missing.' % context.name)
-                value = source.default
+                if source.default:
+                    if isfunction(source.default):
+                        value = source.default()
+                    else:
+                        value = source.default
 
             kwargs[name] = value
 
