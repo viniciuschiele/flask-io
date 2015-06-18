@@ -100,3 +100,10 @@ class TestInteger(TestCase):
     def test_missing_required_body_as_json(self):
         with self.app.test_request_context('/resource', method='post', content_type='application/json'):
             self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromBody(dict, required=True)})
+
+    def test_validate(self):
+        def validate(value):
+            self.assertEqual(value, 1)
+            return True
+        with self.app.test_request_context('/resource?param1=1', method='post', content_type='application/json'):
+            Binder.bind({'param1': FromQuery(int, validate=validate)})

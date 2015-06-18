@@ -6,12 +6,13 @@ from flask import request
 
 
 class BindingSource(metaclass=ABCMeta):
-    def __init__(self, type_=None, name=None, default=None, required=False, multiple=False):
+    def __init__(self, type_=None, name=None, default=None, required=False, multiple=False, validate=None):
         self.type = type_ or str
         self.name = name
         self.default = default
         self.required = required
         self.multiple = multiple
+        self.validate = validate
 
     @abstractmethod
     def get_value(self, key):

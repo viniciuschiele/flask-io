@@ -54,6 +54,9 @@ class Binder(object):
             try:
                 binder = Binder.binders[source.type]
                 value = binder.bind(context)
+
+                if source.validate:
+                    source.validate(value)
             except Exception as e:
                 raise InvalidArgumentError(name, e)
 
