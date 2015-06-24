@@ -84,7 +84,7 @@ class TestInteger(TestCase):
         }
         with self.app.test_request_context('/resource', method='post',
                                            data=json.dumps(data),
-                                           content_type='application/json'):
+                                           content_type='application/json; charset=utf-8'):
             self.assertEqual(Binder.bind({'param1': FromBody(dict)}), {'param1': data})
 
     def test_invalid_body_as_json(self):
