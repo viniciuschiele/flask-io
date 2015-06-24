@@ -27,7 +27,7 @@ class FromBody(BindingSource):
     def get_value(self, key):
         data = request.get_data(as_text=True)
 
-        if request.content_type == 'application/json':
+        if request.content_type.startswith('application/json'):
             if data != '':
                 data = json.loads(data)
 
