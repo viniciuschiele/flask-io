@@ -101,9 +101,15 @@ class TestInteger(TestCase):
         with self.app.test_request_context('/resource', method='post', content_type='application/json'):
             self.assertRaises(RequiredArgumentError, Binder.bind, {'param1': FromBody(dict, required=True)})
 
-    def test_validate(self):
+    def test_validate_success(self):
         def validate(value):
             self.assertEqual(value, 1)
             return True
         with self.app.test_request_context('/resource?param1=1', method='post', content_type='application/json'):
             Binder.bind({'param1': FromQuery(int, validate=validate)})
+
+    def test_validate_error(self):
+        def validate(value):
+            return False
+        with self.app.test_request_context('/resource?param1=1', method='post', content_type='application/json'):
+            self.assertRaises(InvalidArgumentError, Binder.bind, {'param1': FromQuery(int, validate=validate)})
