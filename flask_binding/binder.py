@@ -55,21 +55,26 @@ class Binder(object):
                 binder = Binder.binders[source.type]
                 value = binder.bind(context)
 
-                if source.validate:
-                    source.validate(value)
+                if value is None:
+                    if source.required:
+                        raise RequiredArgumentError(name)
+                    if source.default:
+                        if isfunction(source.default):
+                            value = source.default()
+                        else:
+                            value = source.default
+
+                if source.validate and isfunction(source.validate):
+                    if not source.validate(value):
+                        raise InvalidArgumentError(name)
+
+                kwargs[name] = value
+            except InvalidArgumentError:
+                raise
+            except RequiredArgumentError:
+                raise
             except Exception as e:
                 raise InvalidArgumentError(name, e)
-
-            if value is None:
-                if source.required:
-                    raise RequiredArgumentError(name, 'Argument %s is missing.' % context.name)
-                if source.default:
-                    if isfunction(source.default):
-                        value = source.default()
-                    else:
-                        value = source.default
-
-            kwargs[name] = value
 
         return kwargs
 
