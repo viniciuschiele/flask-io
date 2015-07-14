@@ -58,7 +58,7 @@ class Binder(object):
                 if value is None:
                     if source.required:
                         raise RequiredArgumentError(name)
-                    if source.default:
+                    if source.default is not None:
                         if isfunction(source.default):
                             value = source.default()
                         else:
