@@ -1,8 +1,8 @@
 from flask import request
 from functools import wraps
-from inspect import isfunction
 from .encoders import get_default_encoders
 from .errors import ContentTypeNotSupported
+from .errors import FlaskIOError
 from .errors import InvalidArgumentError
 from .errors import InvalidPayloadError
 from .errors import RequiredArgumentError
@@ -84,7 +84,7 @@ class FlaskIO(object):
         encoder = self.__encoders.get(content_type)
 
         if not encoder:
-            raise ContentTypeNotSupported('Content Type \'%s\' is not supported.' % content_type)
+            raise ContentTypeNotSupported(content_type)
 
         param_value = encoder.decode(data)
 
@@ -109,7 +109,7 @@ class FlaskIO(object):
         parser = self.__parsers.get(param_type)
 
         if not parser:
-            raise Exception('Parameter type \'%s\'does not have a parser.' % str(param_type))
+            raise FlaskIOError('Parameter type \'%s\'does not have a parser.' % str(param_type))
 
         try:
             if multiple:
@@ -136,14 +136,14 @@ class FlaskIO(object):
                 raise RequiredArgumentError(arg_name)
 
             if default:
-                if isfunction(default):
+                if callable(default):
                     arg_value = default()
                 else:
                     arg_value = default
 
         if validate:
             try:
-                success = validate(arg_value)
+                success = validate(arg_name, arg_value)
             except Exception as e:
                 raise InvalidArgumentError(arg_name, e)
 

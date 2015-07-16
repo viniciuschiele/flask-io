@@ -18,7 +18,9 @@ class FlaskIOError(Exception):
 
 
 class ContentTypeNotSupported(FlaskIOError):
-    pass
+    def __init__(self, content_type, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.content_type = content_type
 
 
 class InvalidArgumentError(FlaskIOError):
