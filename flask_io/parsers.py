@@ -16,6 +16,17 @@ import dateutil.parser
 
 from abc import ABCMeta
 from abc import abstractmethod
+from datetime import datetime
+
+
+def get_default_parsers():
+    return {
+        bool: BooleanParser(),
+        int: PrimitiveParser(int),
+        float: PrimitiveParser(float),
+        str: PrimitiveParser(str),
+        datetime: DateTimeParser()
+    }
 
 
 class InputParser(metaclass=ABCMeta):

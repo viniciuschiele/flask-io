@@ -17,6 +17,10 @@ class FlaskIOError(Exception):
     pass
 
 
+class ContentTypeNotSupported(FlaskIOError):
+    pass
+
+
 class InvalidArgumentError(FlaskIOError):
     def __init__(self, arg_name, *args, **kwargs):
         super().__init__(arg_name, args, kwargs)
@@ -27,3 +31,11 @@ class RequiredArgumentError(FlaskIOError):
     def __init__(self, arg_name, *args, **kwargs):
         super().__init__(arg_name, args, kwargs)
         self.arg_name = arg_name
+
+
+class RequiredPayloadError(FlaskIOError):
+    pass
+
+
+class InvalidPayloadError(FlaskIOError):
+    pass
