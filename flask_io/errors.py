@@ -23,21 +23,14 @@ class ContentTypeNotSupported(FlaskIOError):
         self.content_type = content_type
 
 
-class InvalidArgumentError(FlaskIOError):
-    def __init__(self, arg_name, *args, **kwargs):
-        super().__init__(arg_name, args, kwargs)
-        self.arg_name = arg_name
+class ValidationError(FlaskIOError):
+    def __init__(self, reason, location, message, *args, **kwargs):
+        super().__init__(message, args, kwargs)
+        self.reason = reason
+        self.location = location
+        self.message = message
 
 
-class RequiredArgumentError(FlaskIOError):
-    def __init__(self, arg_name, *args, **kwargs):
-        super().__init__(arg_name, args, kwargs)
-        self.arg_name = arg_name
-
-
-class RequiredPayloadError(FlaskIOError):
-    pass
-
-
-class InvalidPayloadError(FlaskIOError):
-    pass
+class ErrorReason(object):
+    required_parameter = 'requiredParameter'
+    invalid_parameter = 'invalidParameter'

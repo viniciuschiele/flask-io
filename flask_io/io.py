@@ -3,14 +3,14 @@ from functools import wraps
 from .encoders import get_default_encoders
 from .errors import ContentTypeNotSupported
 from .errors import FlaskIOError
-from .errors import InvalidArgumentError
-from .errors import InvalidPayloadError
-from .errors import RequiredArgumentError
-from .errors import RequiredPayloadError
+from .errors import ErrorReason
+from .errors import ValidationError
 from .parsers import get_default_parsers
 
 
 class FlaskIO(object):
+    default_encoder = 'application/json'
+
     def __init__(self, app=None):
         self.__encoders = get_default_encoders()
         self.__parsers = get_default_parsers()
@@ -75,32 +75,48 @@ class FlaskIO(object):
         return decorator
 
     def __decode_body_into_param(self, params, param_name, param_type, required, validate):
-        content_type = request.headers['content-type']
         data = request.get_data()
 
         if not data and required:
-            raise RequiredPayloadError()
+            raise ValidationError(ErrorReason.required_parameter, 'payload', 'Payload is missing.')
+
+        try:
+            if param_type is str:
+                arg_value = data.decode()
+            else:
+                arg_value = self.__get_encoder().decode(data)
+        except Exception as e:
+            if isinstance(e, ContentTypeNotSupported):
+                raise
+            raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
+
+        if validate:
+            try:
+                success = validate(arg_value)
+            except Exception as e:
+                if isinstance(e, ValidationError):
+                    raise
+                success = False
+
+            if not success:
+                raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
+
+        params[param_name] = arg_value
+
+    def __get_encoder(self):
+        content_type = request.headers['content-type']
+
+        if content_type:
+            content_type = content_type.split(';')[0]
+        else:
+            content_type = FlaskIO.default_encoder
 
         encoder = self.__encoders.get(content_type)
 
         if not encoder:
             raise ContentTypeNotSupported(content_type)
 
-        param_value = encoder.decode(data)
-
-        if type(param_value) != param_type:
-            raise InvalidPayloadError()
-
-        if validate:
-            try:
-                success = validate(param_value)
-            except Exception as e:
-                raise InvalidPayloadError(e)
-
-            if not success:
-                raise InvalidPayloadError()
-
-        params[param_name] = param_value
+        return encoder
 
     def __parse_arg_into_param(self, params, param_name, param_type, args, arg_name, default, required, multiple, validate):
         if not arg_name:
@@ -109,31 +125,29 @@ class FlaskIO(object):
         parser = self.__parsers.get(param_type)
 
         if not parser:
-            raise FlaskIOError('Parameter type \'%s\'does not have a parser.' % str(param_type))
+            raise FlaskIOError('Parameter type \'%s\' does not have a parser.' % str(param_type))
 
-        try:
-            if multiple:
-                arg_values = args.getlist(arg_name) or [None]
-                param_values = []
-                for arg_value in arg_values:
-                    param_values.append(self.__parse_arg(parser, arg_name, arg_value, default, required, validate))
-                params[param_name] = param_values
-            else:
-                arg_value = args.get(arg_name)
-                params[param_name] = self.__parse_arg(parser, arg_name, arg_value, default, required, validate)
-        except Exception as e:
-            if isinstance(e, (InvalidArgumentError, RequiredArgumentError)):
-                raise
-            raise InvalidArgumentError(arg_name, e)
+        if multiple:
+            arg_values = args.getlist(arg_name) or [None]
+            param_values = []
+            for arg_value in arg_values:
+                param_values.append(self.__parse_arg(parser, arg_name, arg_value, default, required, validate))
+            params[param_name] = param_values
+        else:
+            arg_value = args.get(arg_name)
+            params[param_name] = self.__parse_arg(parser, arg_name, arg_value, default, required, validate)
 
     @staticmethod
     def __parse_arg(parser, arg_name, arg_value, default, required, validate):
-        if arg_value:
-            arg_value = parser.parse(arg_value)
+        try:
+            if arg_value:
+                arg_value = parser.parse(arg_value)
+        except:
+            raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
         if not arg_value:
             if required:
-                raise RequiredArgumentError(arg_name)
+                raise ValidationError(ErrorReason.required_parameter, arg_name, 'Argument \'%s\' is missing.' % arg_name)
 
             if default:
                 if callable(default):
@@ -145,9 +159,11 @@ class FlaskIO(object):
             try:
                 success = validate(arg_name, arg_value)
             except Exception as e:
-                raise InvalidArgumentError(arg_name, e)
+                if isinstance(e, ValidationError):
+                    raise
+                success = False
 
             if not success:
-                raise InvalidArgumentError(arg_name)
+                raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
         return arg_value

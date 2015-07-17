@@ -16,8 +16,7 @@
 from flask import Flask
 from flask import jsonify
 from flask_io import FlaskIO
-from flask_io.errors import InvalidArgumentError
-from flask_io.errors import RequiredArgumentError
+from flask_io.errors import ValidationError
 
 
 app = Flask(__name__)
@@ -44,16 +43,9 @@ def list_users(name, max_results):
     return jsonify(users=users)
 
 
-@app.errorhandler(InvalidArgumentError)
-def invalid_argument_handler(error):
-    response = jsonify(error_message='Argument %s is invalid' % error.arg_name)
-    response.status_code = 400
-    return response
-
-
-@app.errorhandler(RequiredArgumentError)
-def required_argument_handler(error):
-    response = jsonify(error_message='Argument %s is missing' % error.arg_name)
+@app.errorhandler(ValidationError)
+def validation_handler(error):
+    response = jsonify(error_message=error.message)
     response.status_code = 400
     return response
 
