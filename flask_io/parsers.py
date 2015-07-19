@@ -29,13 +29,13 @@ def get_default_parsers():
     }
 
 
-class InputParser(metaclass=ABCMeta):
+class Parser(metaclass=ABCMeta):
     @abstractmethod
     def parse(self, value):
         pass
 
 
-class PrimitiveParser(InputParser):
+class PrimitiveParser(Parser):
     def __init__(self, type_):
         self.type = type_
 
@@ -43,13 +43,13 @@ class PrimitiveParser(InputParser):
         return self.type(value)
 
 
-class BooleanParser(InputParser):
+class BooleanParser(Parser):
     TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
 
     def parse(self, value):
         return value.lower() in self.TRUE_VALUES
 
 
-class DateTimeParser(InputParser):
+class DateTimeParser(Parser):
     def parse(self, value):
         return dateutil.parser.parse(value)

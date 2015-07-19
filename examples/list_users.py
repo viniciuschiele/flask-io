@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from flask import Flask
 from flask import jsonify
 from flask_io import FlaskIO
 from flask_io.errors import ValidationError
-
 
 app = Flask(__name__)
 app.debug = True
@@ -29,6 +27,7 @@ io.init_app(app)
 @app.route('/users')
 @io.from_query('name', str, required=True)
 @io.from_query('max_results', int, default=10)
+@io.render()
 def list_users(name, max_results):
     users = []
 

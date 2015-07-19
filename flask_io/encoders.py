@@ -11,6 +11,11 @@ def get_default_encoders():
 
 
 class Encoder(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def mime_type(self):
+        pass
+
     @abstractmethod
     def encode(self, data):
         pass
@@ -21,6 +26,10 @@ class Encoder(metaclass=ABCMeta):
 
 
 class JsonEncoder(Encoder):
+    @property
+    def mime_type(self):
+        return 'application/json'
+
     def encode(self, data):
         return json.dumps(data).encode()
 

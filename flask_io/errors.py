@@ -17,10 +17,10 @@ class FlaskIOError(Exception):
     pass
 
 
-class ContentTypeNotSupported(FlaskIOError):
-    def __init__(self, content_type, *args, **kwargs):
+class MediaTypeSupported(FlaskIOError):
+    def __init__(self, media_types, *args, **kwargs):
         super().__init__(args, kwargs)
-        self.content_type = content_type
+        self.media_types = media_types
 
 
 class ValidationError(FlaskIOError):

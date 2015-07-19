@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from flask import Flask
 from flask import jsonify
-from flask import Response
 from flask_io import FlaskIO
 from flask_io.errors import ValidationError
 
@@ -28,12 +26,9 @@ io.init_app(app)
 
 @app.route('/users', methods=['POST'])
 @io.from_body('user', dict, required=True)
+@io.render()
 def add_user(user):
-    id = user.get('id')
-
-    # stores the user.
-
-    return Response(status=204)
+    return user
 
 
 @app.errorhandler(ValidationError)

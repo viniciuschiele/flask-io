@@ -1,9 +1,9 @@
-from flask import request
+from flask import make_response, request, Response
 from functools import wraps
 from .encoders import get_default_encoders
-from .errors import ContentTypeNotSupported
-from .errors import FlaskIOError
 from .errors import ErrorReason
+from .errors import FlaskIOError
+from .errors import MediaTypeSupported
 from .errors import ValidationError
 from .parsers import get_default_parsers
 
@@ -74,6 +74,14 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
+    def render(self):
+        def decorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                return self.__render(func(*args, **kwargs))
+            return wrapper
+        return decorator
+
     def __decode_body_into_param(self, params, param_name, param_type, required, validate):
         data = request.get_data()
 
@@ -84,9 +92,9 @@ class FlaskIO(object):
             if param_type is str:
                 arg_value = data.decode()
             else:
-                arg_value = self.__get_encoder().decode(data)
+                arg_value = self.__get_encoder_from_content_type().decode(data)
         except Exception as e:
-            if isinstance(e, ContentTypeNotSupported):
+            if isinstance(e, MediaTypeSupported):
                 raise
             raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
 
@@ -103,18 +111,38 @@ class FlaskIO(object):
 
         params[param_name] = arg_value
 
-    def __get_encoder(self):
+    def __get_encoder_from_content_type(self):
         content_type = request.headers['content-type']
 
         if content_type:
-            content_type = content_type.split(';')[0]
+            media_type = content_type.split(';')[0]
         else:
-            content_type = FlaskIO.default_encoder
+            media_type = FlaskIO.default_encoder
 
-        encoder = self.__encoders.get(content_type)
+        encoder = self.__encoders.get(media_type)
 
         if not encoder:
-            raise ContentTypeNotSupported(content_type)
+            raise MediaTypeSupported([media_type], 'Media type not supported: %s' % media_type)
+
+        return encoder
+
+    def __get_encoder_from_accept(self):
+        accept = request.headers['accept']
+
+        if not accept or '*/*' in accept:
+            media_types = [FlaskIO.default_encoder]
+        else:
+            media_types = accept.split(',')
+
+        encoder = None
+
+        for media_type in media_types:
+            encoder = self.__encoders.get(media_type.split(';')[0])
+            if encoder:
+                break
+
+        if not encoder:
+            raise MediaTypeSupported(media_types, 'Media types not supported: %s' % ', '.join(media_types))
 
         return encoder
 
@@ -167,3 +195,26 @@ class FlaskIO(object):
                 raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
         return arg_value
+
+    def __render(self, data):
+        status = headers = None
+        if isinstance(data, tuple):
+            data, status, headers = data + (None,) * (3 - len(data))
+
+        if not isinstance(data, Response):
+            encoder = self.__get_encoder_from_accept()
+
+            data_bytes = encoder.encode(data)
+
+            data = Response(data_bytes, mimetype=encoder.mime_type)
+
+        if status is not None:
+            if isinstance(status, str):
+                data.status = status
+            else:
+                data.status_code = status
+
+        if headers:
+            data.headers.extend(headers)
+
+        return data
