@@ -1,33 +1,37 @@
-from flask import make_response, request, Response
+from flask import request, Response
 from functools import wraps
-from .encoders import get_default_encoders
+from .encoders import register_default_encoders
 from .errors import ErrorReason
 from .errors import FlaskIOError
 from .errors import MediaTypeSupported
 from .errors import ValidationError
-from .parsers import get_default_parsers
+from .parsers import register_default_parsers
 
 
 class FlaskIO(object):
-    default_encoder = 'application/json'
+    default_encoder = None
 
     def __init__(self, app=None):
-        self.__encoders = get_default_encoders()
-        self.__parsers = get_default_parsers()
+        self.__encoders = {}
+        self.__parsers = {}
+
+        register_default_encoders(self)
+        register_default_parsers(self)
 
         if app:
             self.init_app(app)
 
-    @property
-    def encoders(self):
-        return self.__encoders
-
-    @property
-    def parsers(self):
-        return self.__parsers
-
     def init_app(self, app):
         pass
+
+    def register_encoder(self, encoder):
+        if not self.default_encoder:
+            self.default_encoder = encoder.mime_type
+
+        self.__encoders[encoder.mime_type] = encoder
+
+    def register_parser(self, parser):
+        self.__parsers[parser.type] = parser
 
     def from_body(self, param_name, param_type, required=False, validate=None):
         def decorator(func):

@@ -4,10 +4,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 
-def get_default_encoders():
-    return {
-        'application/json': JsonEncoder()
-    }
+def register_default_encoders(io):
+    io.register_encoder(JsonEncoder())
 
 
 class Encoder(metaclass=ABCMeta):

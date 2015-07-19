@@ -19,17 +19,20 @@ from abc import abstractmethod
 from datetime import datetime
 
 
-def get_default_parsers():
-    return {
-        bool: BooleanParser(),
-        int: PrimitiveParser(int),
-        float: PrimitiveParser(float),
-        str: PrimitiveParser(str),
-        datetime: DateTimeParser()
-    }
+def register_default_parsers(io):
+    io.register_parser(BooleanParser())
+    io.register_parser(PrimitiveParser(int))
+    io.register_parser(PrimitiveParser(float))
+    io.register_parser(PrimitiveParser(str))
+    io.register_parser(DateTimeParser())
 
 
 class Parser(metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def type(self):
+        pass
+
     @abstractmethod
     def parse(self, value):
         pass
@@ -37,19 +40,31 @@ class Parser(metaclass=ABCMeta):
 
 class PrimitiveParser(Parser):
     def __init__(self, type_):
-        self.type = type_
+        self.__type = type_
+
+    @property
+    def type(self):
+        return self.__type
 
     def parse(self, value):
-        return self.type(value)
+        return self.__type(value)
 
 
 class BooleanParser(Parser):
     TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
+
+    @property
+    def type(self):
+        return type(bool)
 
     def parse(self, value):
         return value.lower() in self.TRUE_VALUES
 
 
 class DateTimeParser(Parser):
+    @property
+    def type(self):
+        return type(datetime)
+
     def parse(self, value):
         return dateutil.parser.parse(value)
