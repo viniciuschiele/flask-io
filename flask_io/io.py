@@ -121,7 +121,7 @@ class FlaskIO(object):
         if content_type:
             media_type = content_type.split(';')[0]
         else:
-            media_type = FlaskIO.default_encoder
+            media_type = self.default_encoder
 
         encoder = self.__encoders.get(media_type)
 
@@ -134,7 +134,7 @@ class FlaskIO(object):
         accept = request.headers['accept']
 
         if not accept or '*/*' in accept:
-            media_types = [FlaskIO.default_encoder]
+            media_types = [self.default_encoder]
         else:
             media_types = accept.split(',')
 
