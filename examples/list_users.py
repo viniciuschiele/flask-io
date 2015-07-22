@@ -39,7 +39,7 @@ def list_users(name, max_results):
     if name:
         users = [user for user in users if user.get('name').find(name) > -1]
 
-    return jsonify(users=users)
+    return users
 
 
 @app.errorhandler(ValidationError)
