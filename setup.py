@@ -1,16 +1,16 @@
 from setuptools import setup
 
 setup(
-    name='Flask-Binding',
-    version='0.6.2',
-    packages=['flask_binding'],
-    url='https://github.com/viniciuschiele/flask-binding',
+    name='flask-io',
+    version='0.7.0',
+    packages=['flask_io'],
+    url='https://github.com/viniciuschiele/flask-io',
     license='Apache 2.0',
     author='Vinicius Chiele',
     author_email='vinicius.chiele@gmail.com',
     description='Adds support to turn arguments from the Flask request into method parameters.',
-    keywords=['flask', 'rest', 'parse', 'request'],
-    install_requires=['flask>=0.10.1', 'python-dateutil>=2.4.2'],
+    keywords=['flask', 'rest', 'parse', 'encode', 'decode', 'request'],
+    install_requires=['flask>=0.10.1', 'python-dateutil>=2.4.2', 'marshmallow==1.2.6'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
