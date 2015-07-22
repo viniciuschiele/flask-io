@@ -18,7 +18,6 @@ from flask_io import FlaskIO
 from flask_io.errors import ValidationError
 
 app = Flask(__name__)
-app.debug = True
 
 io = FlaskIO()
 io.init_app(app)
