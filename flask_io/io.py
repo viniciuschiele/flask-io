@@ -1,5 +1,6 @@
 from flask import request, Response
 from functools import wraps
+from inspect import isclass
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import ErrorReason
@@ -86,11 +87,14 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
-    def render(self):
+    def render(self, schema=None):
+        if isclass(schema):
+            schema = schema()
+
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                return self.__encode_into_body(func(*args, **kwargs))
+                return self.__encode_into_body(func(*args, **kwargs), schema)
             return wrapper
         return decorator
 
@@ -138,12 +142,15 @@ class FlaskIO(object):
 
         return decoder(data)
 
-    def __encode_into_body(self, data):
+    def __encode_into_body(self, data, schema=None):
         status = headers = None
         if isinstance(data, tuple):
             data, status, headers = data + (None,) * (3 - len(data))
 
         if not isinstance(data, Response):
+            if schema:
+                many = isinstance(data, (tuple, list))
+                data = schema.dump(data, many=many).data
             media_type, data_bytes = self.__encode(data)
             data = Response(data_bytes, mimetype=media_type)
 
