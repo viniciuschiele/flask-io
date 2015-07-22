@@ -1,5 +1,6 @@
 from flask import request, Response
 from functools import wraps
+from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import ErrorReason
 from .errors import FlaskIOError
@@ -9,12 +10,15 @@ from .parsers import register_default_parsers
 
 
 class FlaskIO(object):
+    default_decoder = None
     default_encoder = None
 
     def __init__(self, app=None):
+        self.__decoders = {}
         self.__encoders = {}
         self.__parsers = {}
 
+        register_default_decoders(self)
         register_default_encoders(self)
         register_default_parsers(self)
 
@@ -24,20 +28,24 @@ class FlaskIO(object):
     def init_app(self, app):
         pass
 
-    def register_encoder(self, encoder):
+    def register_decoder(self, media_type, func):
+        if not self.default_decoder:
+            self.default_decoder = media_type
+        self.__decoders[media_type] = func
+
+    def register_encoder(self, media_type, func):
         if not self.default_encoder:
-            self.default_encoder = encoder.mime_type
+            self.default_encoder = media_type
+        self.__encoders[media_type] = func
 
-        self.__encoders[encoder.mime_type] = encoder
-
-    def register_parser(self, parser):
-        self.__parsers[parser.type] = parser
+    def register_parser(self, type_, func):
+        self.__parsers[type_] = func
 
     def from_body(self, param_name, param_type, required=False, validate=None):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__decode_body_into_param(kwargs, param_name, param_type, required, validate)
+                self.__decode_into_param(kwargs, param_name, param_type, required, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -46,7 +54,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__parse_arg_into_param(kwargs, param_name, param_type, request.cookies, arg_name, default, required, multiple, validate)
+                self.__parse_into_param(kwargs, param_name, param_type, request.cookies, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -55,7 +63,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__parse_arg_into_param(kwargs, param_name, param_type, request.form, arg_name, default, required, multiple, validate)
+                self.__parse_into_param(kwargs, param_name, param_type, request.form, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -64,7 +72,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__parse_arg_into_param(kwargs, param_name, param_type, request.headers, arg_name, default, required, multiple, validate)
+                self.__parse_into_param(kwargs, param_name, param_type, request.headers, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -73,7 +81,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__parse_arg_into_param(kwargs, param_name, param_type, request.args, arg_name, default, required, multiple, validate)
+                self.__parse_into_param(kwargs, param_name, param_type, request.args, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -82,11 +90,11 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                return self.__render(func(*args, **kwargs))
+                return self.__encode_into_body(func(*args, **kwargs))
             return wrapper
         return decorator
 
-    def __decode_body_into_param(self, params, param_name, param_type, required, validate):
+    def __decode_into_param(self, params, param_name, param_type, required, validate):
         data = request.get_data()
 
         if not data and required:
@@ -96,7 +104,7 @@ class FlaskIO(object):
             if param_type is str:
                 arg_value = data.decode()
             else:
-                arg_value = self.__get_encoder_from_content_type().decode(data)
+                arg_value = self.__decode(data)
         except Exception as e:
             if isinstance(e, MediaTypeSupported):
                 raise
@@ -115,22 +123,42 @@ class FlaskIO(object):
 
         params[param_name] = arg_value
 
-    def __get_encoder_from_content_type(self):
+    def __decode(self, data):
         content_type = request.headers['content-type']
 
         if content_type:
             media_type = content_type.split(';')[0]
         else:
-            media_type = self.default_encoder
+            media_type = self.default_decoder
 
-        encoder = self.__encoders.get(media_type)
+        decoder = self.__decoders.get(media_type)
 
-        if not encoder:
+        if not decoder:
             raise MediaTypeSupported([media_type], 'Media type not supported: %s' % media_type)
 
-        return encoder
+        return decoder(data)
 
-    def __get_encoder_from_accept(self):
+    def __encode_into_body(self, data):
+        status = headers = None
+        if isinstance(data, tuple):
+            data, status, headers = data + (None,) * (3 - len(data))
+
+        if not isinstance(data, Response):
+            media_type, data_bytes = self.__encode(data)
+            data = Response(data_bytes, mimetype=media_type)
+
+        if status is not None:
+            if isinstance(status, str):
+                data.status = status
+            else:
+                data.status_code = status
+
+        if headers:
+            data.headers.extend(headers)
+
+        return data
+
+    def __encode(self, data):
         accept = request.headers['accept']
 
         if not accept or '*/*' in accept:
@@ -138,19 +166,21 @@ class FlaskIO(object):
         else:
             media_types = accept.split(',')
 
+        media_type = None
         encoder = None
 
-        for media_type in media_types:
-            encoder = self.__encoders.get(media_type.split(';')[0])
+        for mt in media_types:
+            media_type = mt.split(';')[0]
+            encoder = self.__encoders.get(media_type)
             if encoder:
                 break
 
         if not encoder:
             raise MediaTypeSupported(media_types, 'Media types not supported: %s' % ', '.join(media_types))
 
-        return encoder
+        return media_type, encoder(data)
 
-    def __parse_arg_into_param(self, params, param_name, param_type, args, arg_name, default, required, multiple, validate):
+    def __parse_into_param(self, params, param_name, param_type, args, arg_name, default, required, multiple, validate):
         if not arg_name:
             arg_name = param_name
 
@@ -163,17 +193,17 @@ class FlaskIO(object):
             arg_values = args.getlist(arg_name) or [None]
             param_values = []
             for arg_value in arg_values:
-                param_values.append(self.__parse_arg(parser, arg_name, arg_value, default, required, validate))
+                param_values.append(self.__parse(parser, param_type, arg_name, arg_value, default, required, validate))
             params[param_name] = param_values
         else:
             arg_value = args.get(arg_name)
-            params[param_name] = self.__parse_arg(parser, arg_name, arg_value, default, required, validate)
+            params[param_name] = self.__parse(parser, param_type, arg_name, arg_value, default, required, validate)
 
     @staticmethod
-    def __parse_arg(parser, arg_name, arg_value, default, required, validate):
+    def __parse(parser, param_type, arg_name, arg_value, default, required, validate):
         try:
             if arg_value:
-                arg_value = parser.parse(arg_value)
+                arg_value = parser(param_type, arg_value)
         except:
             raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
@@ -199,26 +229,3 @@ class FlaskIO(object):
                 raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
         return arg_value
-
-    def __render(self, data):
-        status = headers = None
-        if isinstance(data, tuple):
-            data, status, headers = data + (None,) * (3 - len(data))
-
-        if not isinstance(data, Response):
-            encoder = self.__get_encoder_from_accept()
-
-            data_bytes = encoder.encode(data)
-
-            data = Response(data_bytes, mimetype=encoder.mime_type)
-
-        if status is not None:
-            if isinstance(status, str):
-                data.status = status
-            else:
-                data.status_code = status
-
-        if headers:
-            data.headers.extend(headers)
-
-        return data

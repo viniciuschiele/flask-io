@@ -1,35 +1,17 @@
 import json
 
-from abc import ABCMeta
-from abc import abstractmethod
+
+def register_default_decoders(io):
+    io.register_encoder('application/json', json_decode)
 
 
 def register_default_encoders(io):
-    io.register_encoder(JsonEncoder())
+    io.register_encoder('application/json', json_encode)
 
 
-class Encoder(metaclass=ABCMeta):
-    @property
-    @abstractmethod
-    def mime_type(self):
-        pass
-
-    @abstractmethod
-    def encode(self, data):
-        pass
-
-    @abstractmethod
-    def decode(self, data):
-        pass
+def json_decode(data):
+    return json.loads(data.decode())
 
 
-class JsonEncoder(Encoder):
-    @property
-    def mime_type(self):
-        return 'application/json'
-
-    def encode(self, data):
-        return json.dumps(data).encode()
-
-    def decode(self, data):
-        return json.loads(data.decode())
+def json_encode(data):
+    return json.dumps(data).encode()
