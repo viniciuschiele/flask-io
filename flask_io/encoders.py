@@ -2,7 +2,7 @@ import json
 
 
 def register_default_decoders(io):
-    io.register_encoder('application/json', json_decode)
+    io.register_decoder('application/json', json_decode)
 
 
 def register_default_encoders(io):
