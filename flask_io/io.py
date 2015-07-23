@@ -42,11 +42,14 @@ class FlaskIO(object):
     def register_parser(self, type_, func):
         self.__parsers[type_] = func
 
-    def from_body(self, param_name, param_type, required=False, validate=None):
+    def from_body(self, param_name, param_type, schema=None, required=False, validate=None):
+        if isclass(schema):
+            schema = schema()
+
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__decode_into_param(kwargs, param_name, param_type, required, validate)
+                self.__decode_into_param(kwargs, param_name, param_type, schema, required, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -98,7 +101,7 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
-    def __decode_into_param(self, params, param_name, param_type, required, validate):
+    def __decode_into_param(self, params, param_name, param_type, schema, required, validate):
         data = request.get_data()
 
         if not data and required:
@@ -109,9 +112,14 @@ class FlaskIO(object):
                 arg_value = data.decode()
             else:
                 arg_value = self.__decode(data)
+                if schema:
+                    arg_value = schema.load(arg_value).data
         except Exception as e:
             if isinstance(e, MediaTypeSupported):
                 raise
+            raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
+
+        if type(arg_value) != param_type:
             raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
 
         if validate:
