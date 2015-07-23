@@ -113,9 +113,13 @@ class FlaskIO(object):
             else:
                 arg_value = self.__decode(data)
                 if schema:
+                    result = schema.load(arg_value)
+                    if result.errors:
+                        key, value = result.errors.popitem()
+                        raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
                     arg_value = schema.load(arg_value).data
         except Exception as e:
-            if isinstance(e, MediaTypeSupported):
+            if isinstance(e, (MediaTypeSupported, ValidationError)):
                 raise
             raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
 
