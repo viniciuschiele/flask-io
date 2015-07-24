@@ -38,7 +38,7 @@ class UserSchema(Schema):
 
 @app.route('/users', methods=['POST'])
 @io.from_body('user', User, UserSchema, required=True)
-@io.render(schema=UserSchema)
+@io.marshal_with(UserSchema)
 def add_user(user):
     return user
 

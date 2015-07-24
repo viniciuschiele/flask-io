@@ -26,7 +26,6 @@ io.init_app(app)
 @app.route('/users')
 @io.from_query('name', str, required=True)
 @io.from_query('max_results', int, default=10)
-@io.render()
 def list_users(name, max_results):
     users = []
 

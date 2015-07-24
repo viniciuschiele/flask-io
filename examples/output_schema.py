@@ -36,7 +36,7 @@ class UserSchema(Schema):
 @app.route('/users')
 @io.from_query('username', str, required=True)
 @io.from_query('max_results', int, default=10)
-@io.render(schema=UserSchema)
+@io.marshal_with(UserSchema)
 def list_users(username, max_results):
     users = []
 

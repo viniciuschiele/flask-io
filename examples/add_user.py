@@ -25,7 +25,6 @@ io.init_app(app)
 
 @app.route('/users', methods=['POST'])
 @io.from_body('user', dict, required=True)
-@io.render()
 def add_user(user):
     return user
 
