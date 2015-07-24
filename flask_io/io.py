@@ -8,6 +8,7 @@ from .errors import FlaskIOError
 from .errors import MediaTypeSupported
 from .errors import ValidationError
 from .parsers import register_default_parsers
+from .utils import unpack
 
 
 class FlaskIO(object):
@@ -15,6 +16,7 @@ class FlaskIO(object):
     default_encoder = None
 
     def __init__(self, app=None):
+        self.__app = None
         self.__decoders = {}
         self.__encoders = {}
         self.__parsers = {}
@@ -27,7 +29,12 @@ class FlaskIO(object):
             self.init_app(app)
 
     def init_app(self, app):
-        pass
+        self.__app = app
+        app.before_first_request(self.__register_views)
+
+    def __register_views(self):
+        for key in self.__app.view_functions.keys():
+            self.__app.view_functions[key] = self.__output(self.__app.view_functions[key])
 
     def register_decoder(self, media_type, func):
         if not self.default_decoder:
@@ -90,15 +97,22 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
-    def render(self, schema=None):
+    def marshal_with(self, schema, model=None):
         if isclass(schema):
             schema = schema()
 
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                return self.__encode_into_body(func(*args, **kwargs), schema)
+                data = func(*args, **kwargs)
+                return self.__marshal(data, model, schema)
             return wrapper
+        return decorator
+
+    def __output(self, func):
+        def decorator():
+            data = func()
+            return self.__encode_into_body(data)
         return decorator
 
     def __decode_into_param(self, params, param_name, param_type, schema, required, validate):
@@ -154,17 +168,12 @@ class FlaskIO(object):
 
         return decoder(data)
 
-    def __encode_into_body(self, data, schema=None):
-        status = headers = None
-        if isinstance(data, tuple):
-            data, status, headers = data + (None,) * (3 - len(data))
+    def __encode_into_body(self, data):
+        data, status, headers = unpack(data)
 
-        if not isinstance(data, Response):
-            if schema:
-                many = isinstance(data, (tuple, list))
-                data = schema.dump(data, many=many).data
+        if not isinstance(data, self.__app.response_class):
             media_type, data_bytes = self.__encode(data)
-            data = Response(data_bytes, mimetype=media_type)
+            data = self.__app.response_class(data_bytes, mimetype=media_type)
 
         if status is not None:
             if isinstance(status, str):
@@ -198,6 +207,15 @@ class FlaskIO(object):
             raise MediaTypeSupported(media_types, 'Media types not supported: %s' % ', '.join(media_types))
 
         return media_type, encoder(data)
+
+    def __marshal(self, data, model, schema):
+        data, status, headers = unpack(data)
+
+        if model and not isinstance(data, model):
+            return data, status, headers
+
+        many = isinstance(data, list)
+        return schema.dump(data, many=many).data, status, headers
 
     def __parse_into_param(self, params, param_name, param_type, args, arg_name, default, required, multiple, validate):
         if not arg_name:
