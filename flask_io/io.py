@@ -177,36 +177,33 @@ class FlaskIO(object):
             raise ValidationError(ErrorReason.required_parameter, 'payload', 'Payload is missing.')
 
         try:
-            if param_type is str:
-                arg_value = data.decode()
+            content_type = request.headers['content-type']
+
+            if content_type:
+                media_type = content_type.split(';')[0]
             else:
-                content_type = request.headers['content-type']
+                media_type = self.default_decoder
 
-                if content_type:
-                    media_type = content_type.split(';')[0]
-                else:
-                    media_type = self.default_decoder
+            decoder = self.__decoders.get(media_type)
 
-                decoder = self.__decoders.get(media_type)
+            if not decoder:
+                raise MediaTypeSupported([media_type], 'Media type not supported: %s' % media_type)
 
-                if not decoder:
-                    raise MediaTypeSupported([media_type], 'Media type not supported: %s' % media_type)
+            arg_value = decoder(data)
 
-                arg_value = decoder(data)
-
-                if schema:
-                    result = schema.load(arg_value)
-                    if result.errors:
-                        key, value = result.errors.popitem()
-                        raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
-                    arg_value = schema.load(arg_value).data
+            if schema:
+                result = schema.load(arg_value)
+                if result.errors:
+                    key, value = result.errors.popitem()
+                    raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
+                arg_value = schema.load(arg_value).data
         except Exception as e:
             if isinstance(e, (MediaTypeSupported, ValidationError)):
                 raise
             raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
 
         if type(arg_value) != param_type:
-            raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
+            raise FlaskIOError('Value decoded is not compatible with parameter type.')
 
         if validate:
             try:
