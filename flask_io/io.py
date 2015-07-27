@@ -150,19 +150,13 @@ class FlaskIO(object):
                         else:
                             arg_value = default
 
-                if validate:
-                    try:
-                        success = validate(arg_name, arg_value)
-                    except Exception as e:
-                        if isinstance(e, ValidationError):
-                            raise
-                        success = False
-
-                    if not success:
-                        raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
+                if validate and not validate(arg_name, arg_value):
+                    raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
                 param_values.append(arg_value)
-        except:
+        except Exception as e:
+            if isinstance(e, FlaskIOError):
+                raise
             raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
         if multiple:
@@ -197,24 +191,16 @@ class FlaskIO(object):
                     key, value = result.errors.popitem()
                     raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
                 arg_value = schema.load(arg_value).data
+
+            if type(arg_value) != param_type:
+                raise FlaskIOError('Value decoded is not compatible with parameter type.')
+
+            if validate and not validate('body', arg_value):
+                raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body is invalid.')
         except Exception as e:
-            if isinstance(e, (MediaTypeSupported, ValidationError)):
+            if isinstance(e, FlaskIOError):
                 raise
-            raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
-
-        if type(arg_value) != param_type:
-            raise FlaskIOError('Value decoded is not compatible with parameter type.')
-
-        if validate:
-            try:
-                success = validate(arg_value)
-            except Exception as e:
-                if isinstance(e, ValidationError):
-                    raise
-                success = False
-
-            if not success:
-                raise ValidationError(ErrorReason.invalid_parameter, 'payload', 'Payload is invalid.')
+            raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body is invalid.')
 
         params[param_name] = arg_value
 
