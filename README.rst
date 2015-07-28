@@ -1,7 +1,7 @@
 =================================
 Flask Binding
 =================================
-Flask Binding is a library for Python 3+ which parses the arguments from the Flask request and turns them into method parameters.
+Flask IO is a library for Python 3+ which parses the Flask request and turns it into method parameters.
 
 Documentation
 ===============
@@ -9,25 +9,25 @@ Soon... take a look at the examples_ to see how it works.
 
 Installation
 ===============
-You can install Flask Binding via Python Package Index (PyPi_),::
+You can install Flask IO via Python Package Index (PyPi_),::
 
-    $ pip install flask-binding
+    $ pip install flask-io
 
 Feedback
 ===============
 Please use the Issues_ for feature requests and troubleshooting usage.
 
-.. |Version| image:: https://badge.fury.io/py/flask-binding.svg?
-   :target: http://badge.fury.io/py/flask-binding
+.. |Version| image:: https://badge.fury.io/py/flask-io.svg?
+   :target: http://badge.fury.io/py/flask-io
 
-.. |Downloads| image:: https://pypip.in/d/flask-binding/badge.svg?
-   :target: https://pypi.python.org/pypi/flask-binding
+.. |Downloads| image:: https://pypip.in/d/flask-io/badge.svg?
+   :target: https://pypi.python.org/pypi/flask-io
    
-.. |License| image:: https://pypip.in/license/flask-binding/badge.svg?
-   :target: https://github.com/viniciuschiele/flask-binding/blob/master/LICENSE
+.. |License| image:: https://pypip.in/license/flask-io/badge.svg?
+   :target: https://github.com/viniciuschiele/flask-io/blob/master/LICENSE
 
-.. _examples: https://github.com/viniciuschiele/flask-binding/tree/master/examples
+.. _examples: https://github.com/viniciuschiele/flask-io/tree/master/examples
 
-.. _PyPi: https://pypi.python.org/pypi/flask-binding
+.. _PyPi: https://pypi.python.org/pypi/flask-io
 
-.. _Issues: https://github.com/viniciuschiele/flask-binding/issues
+.. _Issues: https://github.com/viniciuschiele/flask-io/issues
