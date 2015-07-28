@@ -30,7 +30,7 @@ def add_user(user):
 
 
 @app.errorhandler(ValidationError)
-def validation_handler(error):
+def validation_error_handler(error):
     response = io.make_response(dict(error_message=error.message))
     response.status_code = 400
     return response

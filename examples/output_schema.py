@@ -50,8 +50,8 @@ def list_users(username, max_results):
 
 
 @app.errorhandler(ValidationError)
-def validation_handler(error):
-    response = jsonify(error_message=error.message)
+def validation_error_handler(error):
+    response = io.make_response(dict(error_message=error.message))
     response.status_code = 400
     return response
 
