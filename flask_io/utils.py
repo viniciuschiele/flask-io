@@ -12,7 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from flask import request
 from inspect import isclass
+
+
+def get_best_match_for_content_type(mimetypes, default_mimetype=None):
+    content_type = request.headers['content-type']
+
+    if content_type:
+        mimetype_expected = content_type.split(';')[0].lower()
+        for mimetype in mimetypes:
+            if mimetype_expected == mimetype:
+                return mimetype
+        return None
+
+    return default_mimetype
 
 
 def new_if_isclass(value):

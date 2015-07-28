@@ -14,14 +14,14 @@
 
 from flask import request
 from functools import wraps
+from werkzeug.exceptions import NotAcceptable
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import ErrorReason
 from .errors import FlaskIOError
-from .errors import MediaTypeSupported
 from .errors import ValidationError
 from .parsers import register_default_parsers
-from .utils import unpack, new_if_isclass
+from .utils import get_best_match_for_content_type, new_if_isclass, unpack
 
 
 class FlaskIO(object):
@@ -120,6 +120,29 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
+    def make_response(self, data):
+        status = headers = None
+        if isinstance(data, tuple):
+            data, status, headers = unpack(data)
+
+        if not isinstance(data, self.__app.response_class):
+            media_type = request.accept_mimetypes.best_match(self.__encoders, default=self.default_encoder)
+            encoder = self.__encoders.get(media_type)
+
+            if media_type is None:
+                raise NotAcceptable()
+
+            data_bytes = encoder(data)
+            data = self.__app.response_class(data_bytes, mimetype=media_type)
+
+        if status is not None:
+            data.status_code = status
+
+        if headers:
+            data.headers.extend(headers)
+
+        return data
+
     def __fill_param_from_args(self, params, param_name, param_type, args, arg_name, default, required, multiple, validate):
         if not arg_name:
             arg_name = param_name
@@ -168,21 +191,15 @@ class FlaskIO(object):
         data = request.get_data()
 
         if not data and required:
-            raise ValidationError(ErrorReason.required_parameter, 'payload', 'Payload is missing.')
+            raise ValidationError(ErrorReason.required_parameter, 'body', 'body data is missing.')
 
         try:
-            content_type = request.headers['content-type']
+            mimetype = get_best_match_for_content_type(self.__decoders, self.default_decoder)
 
-            if content_type:
-                media_type = content_type.split(';')[0]
-            else:
-                media_type = self.default_decoder
+            if not mimetype:
+                raise NotAcceptable()
 
-            decoder = self.__decoders.get(media_type)
-
-            if not decoder:
-                raise MediaTypeSupported([media_type], 'Media type not supported: %s' % media_type)
-
+            decoder = self.__decoders.get(mimetype)
             arg_value = decoder(data)
 
             if schema:
@@ -196,47 +213,13 @@ class FlaskIO(object):
                 raise FlaskIOError('Value decoded is not compatible with parameter type.')
 
             if validate and not validate('body', arg_value):
-                raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body is invalid.')
+                raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
         except Exception as e:
             if isinstance(e, FlaskIOError):
                 raise
-            raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body is invalid.')
+            raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
 
         params[param_name] = arg_value
-
-    def __make_response(self, data):
-        status = headers = None
-        if isinstance(data, tuple):
-            data, status, headers = unpack(data)
-
-        if not isinstance(data, self.__app.response_class):
-            accept = request.headers['accept']
-
-            if not accept or '*/*' in accept:
-                media_types = [self.default_encoder]
-            else:
-                media_types = accept.split(',')
-
-            media_type = encoder = None
-            for media_type in media_types:
-                media_type = media_type.split(';')[0]
-                encoder = self.__encoders.get(media_type)
-                if encoder:
-                    break
-
-            if not encoder:
-                raise MediaTypeSupported(media_types, 'Media types not supported: %s' % ', '.join(media_types))
-
-            data_bytes = encoder(data)
-            data = self.__app.response_class(data_bytes, mimetype=media_type)
-
-        if status is not None:
-            data.status_code = status
-
-        if headers:
-            data.headers.extend(headers)
-
-        return data
 
     def __marshal(self, data, schema, model=None):
         if model and not isinstance(data, model):
@@ -248,7 +231,7 @@ class FlaskIO(object):
     def __output(self, func):
         def decorator():
             data = func()
-            return self.__make_response(data)
+            return self.make_response(data)
         return decorator
 
     def __register_views(self):

@@ -17,12 +17,6 @@ class FlaskIOError(Exception):
     pass
 
 
-class MediaTypeSupported(FlaskIOError):
-    def __init__(self, media_types, *args, **kwargs):
-        super().__init__(args, kwargs)
-        self.media_types = media_types
-
-
 class ValidationError(FlaskIOError):
     def __init__(self, reason, location, message, *args, **kwargs):
         super().__init__(message, args, kwargs)
