@@ -14,7 +14,7 @@
 
 from flask import request
 from functools import wraps
-from werkzeug.exceptions import NotAcceptable
+from werkzeug.exceptions import InternalServerError, NotAcceptable
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import ErrorReason
@@ -25,7 +25,6 @@ from .utils import get_best_match_for_content_type, new_if_isclass, unpack
 
 
 class FlaskIO(object):
-    default_decoder = None
     default_encoder = None
 
     def __init__(self, app=None):
@@ -46,8 +45,6 @@ class FlaskIO(object):
         self.__app.before_first_request(self.__register_views)
 
     def register_decoder(self, media_type, func):
-        if not self.default_decoder:
-            self.default_decoder = media_type
         self.__decoders[media_type] = func
 
     def register_encoder(self, media_type, func):
@@ -129,8 +126,8 @@ class FlaskIO(object):
             media_type = request.accept_mimetypes.best_match(self.__encoders, default=self.default_encoder)
             encoder = self.__encoders.get(media_type)
 
-            if media_type is None:
-                raise NotAcceptable()
+            if encoder is None:
+                raise InternalServerError()
 
             data_bytes = encoder(data)
             data = self.__app.response_class(data_bytes, mimetype=media_type)
@@ -157,30 +154,28 @@ class FlaskIO(object):
         else:
             arg_values = [args.get(arg_name)]
 
-        try:
-            param_values = []
-            for arg_value in arg_values:
-                if arg_value:
+        param_values = []
+        for arg_value in arg_values:
+            if arg_value:
+                try:
                     arg_value = parser(param_type, arg_value)
-
-                if not arg_value:
-                    if required:
-                        raise ValidationError(ErrorReason.required_parameter, arg_name, 'Argument \'%s\' is missing.' % arg_name)
-
-                    if default:
-                        if callable(default):
-                            arg_value = default()
-                        else:
-                            arg_value = default
-
-                if validate and not validate(arg_name, arg_value):
+                except:
                     raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
-                param_values.append(arg_value)
-        except Exception as e:
-            if isinstance(e, FlaskIOError):
-                raise
-            raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
+            if not arg_value:
+                if required:
+                    raise ValidationError(ErrorReason.required_parameter, arg_name, 'Argument \'%s\' is missing.' % arg_name)
+
+                if default:
+                    if callable(default):
+                        arg_value = default()
+                    else:
+                        arg_value = default
+
+            if validate and not validate(arg_name, arg_value):
+                raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
+
+            param_values.append(arg_value)
 
         if multiple:
             params[param_name] = param_values
@@ -193,30 +188,29 @@ class FlaskIO(object):
         if not data and required:
             raise ValidationError(ErrorReason.required_parameter, 'body', 'body data is missing.')
 
+        mimetype = get_best_match_for_content_type(self.__decoders)
+
+        if not mimetype:
+            raise NotAcceptable()
+
+        decoder = self.__decoders.get(mimetype)
+
         try:
-            mimetype = get_best_match_for_content_type(self.__decoders, self.default_decoder)
-
-            if not mimetype:
-                raise NotAcceptable()
-
-            decoder = self.__decoders.get(mimetype)
             arg_value = decoder(data)
+        except:
+            raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
 
-            if schema:
-                result = schema.load(arg_value)
-                if result.errors:
-                    key, value = result.errors.popitem()
-                    raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
-                arg_value = schema.load(arg_value).data
+        if schema:
+            result = schema.load(arg_value)
+            if result.errors:
+                key, value = result.errors.popitem()
+                raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
+            arg_value = schema.load(arg_value).data
 
-            if type(arg_value) != param_type:
-                raise FlaskIOError('Value decoded is not compatible with parameter type.')
+        if type(arg_value) != param_type:
+            raise FlaskIOError('Value decoded is not compatible with parameter type.')
 
-            if validate and not validate('body', arg_value):
-                raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
-        except Exception as e:
-            if isinstance(e, FlaskIOError):
-                raise
+        if validate and not validate('body', arg_value):
             raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
 
         params[param_name] = arg_value

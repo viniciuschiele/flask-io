@@ -16,17 +16,14 @@ from flask import request
 from inspect import isclass
 
 
-def get_best_match_for_content_type(mimetypes, default_mimetype=None):
+def get_best_match_for_content_type(mimetypes):
     content_type = request.headers['content-type']
 
-    if content_type:
-        mimetype_expected = content_type.split(';')[0].lower()
-        for mimetype in mimetypes:
-            if mimetype_expected == mimetype:
-                return mimetype
-        return None
-
-    return default_mimetype
+    mimetype_expected = content_type.split(';')[0].lower()
+    for mimetype in mimetypes:
+        if mimetype_expected == mimetype:
+            return mimetype
+    return None
 
 
 def new_if_isclass(value):
