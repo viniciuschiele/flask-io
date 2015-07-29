@@ -43,3 +43,17 @@ class TestInteger(TestCase):
 
     def test_none_value(self):
         self.assertRaises(TypeError, parse_primitive, int, None)
+
+
+class TestFloat(TestCase):
+    def test_valid_value(self):
+        self.assertEqual(parse_primitive(float, '10.2'), 10.2)
+
+    def test_invalid_value(self):
+        self.assertRaises(ValueError, parse_primitive, float, 'abc')
+
+    def test_empty_value(self):
+        self.assertRaises(ValueError, parse_primitive, float, '')
+
+    def test_none_value(self):
+        self.assertRaises(TypeError, parse_primitive, float, None)
