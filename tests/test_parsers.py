@@ -13,7 +13,8 @@
 # limitations under the License.
 
 
-from flask_io.parsers import parse_bool, parse_primitive
+from datetime import datetime
+from flask_io.parsers import parse_bool, parse_datetime, parse_primitive
 from unittest import TestCase
 
 
@@ -57,3 +58,18 @@ class TestFloat(TestCase):
 
     def test_none_value(self):
         self.assertRaises(TypeError, parse_primitive, float, None)
+
+
+class TestDateTime(TestCase):
+    def test_valid_value(self):
+        self.assertEqual(parse_datetime(datetime, '2015-06-30'), datetime(2015, 6, 30))
+        self.assertEqual(parse_datetime(datetime, '2015-06-30T14:01:30'), datetime(2015, 6, 30, 14, 1, 30))
+
+    def test_invalid_value(self):
+        self.assertRaises(ValueError, parse_datetime, datetime, 'abc')
+
+    def test_empty_value(self):
+        self.assertRaises(ValueError, parse_datetime, datetime, '')
+
+    def test_none_value(self):
+        self.assertRaises(TypeError, parse_datetime, datetime, None)
