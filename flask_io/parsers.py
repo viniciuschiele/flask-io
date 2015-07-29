@@ -26,7 +26,18 @@ def register_default_parsers(io):
 
 
 def parse_bool(type_, value):
-    return value.lower() in ['yes', 'true', 'y', 't', '1']
+    if value is None:
+        raise ValueError('Parameter value cannot be None.')
+
+    value = value.lower()
+
+    if value in ['yes', 'true', 'y', 't', '1']:
+        return True
+
+    if value in ['no', 'false', 'n', 'f', '0']:
+        return False
+
+    raise ValueError('Parameter value cannot be parsed into bool: ' + value)
 
 
 def parse_datetime(type_, value):
