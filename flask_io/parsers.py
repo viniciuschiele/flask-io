@@ -27,7 +27,7 @@ def register_default_parsers(io):
 
 def parse_bool(type_, value):
     if value is None:
-        raise TypeError('Parameter value cannot be None.')
+        raise TypeError('value cannot be None.')
 
     value = value.lower()
 
@@ -37,10 +37,16 @@ def parse_bool(type_, value):
     if value in ['no', 'false', 'n', 'f', '0']:
         return False
 
-    raise ValueError('Parameter value cannot be parsed into bool: ' + value)
+    raise ValueError('value cannot be parsed into bool: ' + value)
 
 
 def parse_datetime(type_, value):
+    if value is None:
+        raise TypeError('value cannot be NoneType.')
+
+    if not value.strip():
+        raise ValueError('value cannot be empty.')
+
     return dateutil.parser.parse(value)
 
 
