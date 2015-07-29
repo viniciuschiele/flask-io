@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from flask_io.parsers import parse_bool
+from flask_io.parsers import parse_bool, parse_primitive
 from unittest import TestCase
 
 
@@ -28,4 +28,18 @@ class TestBoolean(TestCase):
         self.assertRaises(ValueError, parse_bool, bool, '')
 
     def test_none_value(self):
-        self.assertRaises(ValueError, parse_bool, bool, None)
+        self.assertRaises(TypeError, parse_bool, bool, None)
+
+
+class TestInteger(TestCase):
+    def test_valid_value(self):
+        self.assertEqual(parse_primitive(int, '10'), 10)
+
+    def test_invalid_value(self):
+        self.assertRaises(ValueError, parse_primitive, int, 'abc')
+
+    def test_empty_value(self):
+        self.assertRaises(ValueError, parse_primitive, int, '')
+
+    def test_none_value(self):
+        self.assertRaises(TypeError, parse_primitive, int, None)

@@ -27,7 +27,7 @@ def register_default_parsers(io):
 
 def parse_bool(type_, value):
     if value is None:
-        raise ValueError('Parameter value cannot be None.')
+        raise TypeError('Parameter value cannot be None.')
 
     value = value.lower()
 
