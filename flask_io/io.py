@@ -18,7 +18,6 @@ from werkzeug.exceptions import InternalServerError, NotAcceptable
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import ErrorReason
-from .errors import FlaskIOError
 from .errors import ValidationError
 from .parsers import register_default_parsers
 from .utils import get_best_match_for_content_type, new_if_isclass, unpack
@@ -147,7 +146,7 @@ class FlaskIO(object):
         parser = self.__parsers.get(param_type)
 
         if not parser:
-            raise FlaskIOError('Parameter type \'%s\' does not have a parser.' % str(param_type))
+            raise InternalServerError('Parameter type \'%s\' does not have a parser.' % str(param_type))
 
         if multiple:
             arg_values = args.getlist(arg_name) or [None]
@@ -208,7 +207,7 @@ class FlaskIO(object):
             arg_value = schema.load(arg_value).data
 
         if type(arg_value) != param_type:
-            raise FlaskIOError('Value decoded is not compatible with parameter type.')
+            raise InternalServerError('Value decoded is not compatible with parameter type.')
 
         if validate and not validate('body', arg_value):
             raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')

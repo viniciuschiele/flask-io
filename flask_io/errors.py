@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-class FlaskIOError(Exception):
-    pass
+from werkzeug.exceptions import BadRequest
 
 
-class ValidationError(FlaskIOError):
-    def __init__(self, reason, location, message, *args, **kwargs):
-        super().__init__(message, args, kwargs)
+class ValidationError(BadRequest):
+    def __init__(self, reason, location, message):
+        super().__init__(message)
         self.reason = reason
         self.location = location
         self.message = message
