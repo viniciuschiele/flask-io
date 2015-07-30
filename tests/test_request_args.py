@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from flask import Flask
 from flask_io import FlaskIO
 from unittest import TestCase
 
 
-class TestRequest(TestCase):
+class TestRequestArgs(TestCase):
     def setUp(self):
         self.app = Flask(__name__)
         self.io = FlaskIO()
@@ -80,3 +79,4 @@ class TestRequest(TestCase):
             self.assertEqual(param1[1], 20)
         response = self.client.get('/resource?param1=10&param1=20')
         self.assertEqual(response.status_code, 200)
+
