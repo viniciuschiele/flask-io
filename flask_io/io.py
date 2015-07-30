@@ -60,7 +60,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__fill_param_from_body(kwargs, param_name, param_type, schema, required, validate)
+                kwargs[param_name] = self.__parse_param_from_body(param_type, schema, required, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -69,7 +69,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__fill_param_from_args(kwargs, param_name, param_type, request.cookies, arg_name, default, required, multiple, validate)
+                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.cookies, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -78,7 +78,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__fill_param_from_args(kwargs, param_name, param_type, request.form, arg_name, default, required, multiple, validate)
+                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.form, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -87,7 +87,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__fill_param_from_args(kwargs, param_name, param_type, request.headers, arg_name, default, required, multiple, validate)
+                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.headers, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -96,7 +96,7 @@ class FlaskIO(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                self.__fill_param_from_args(kwargs, param_name, param_type, request.args, arg_name, default, required, multiple, validate)
+                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.args, arg_name, default, required, multiple, validate)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -139,7 +139,7 @@ class FlaskIO(object):
 
         return data
 
-    def __fill_param_from_args(self, params, param_name, param_type, args, arg_name, default, required, multiple, validate):
+    def __parse_param_from_args(self, param_name, param_type, args, arg_name, default, required, multiple, validate):
         if not arg_name:
             arg_name = param_name
 
@@ -155,13 +155,16 @@ class FlaskIO(object):
 
         param_values = []
         for arg_value in arg_values:
+            if arg_value == '':
+                arg_value = None
+
             if arg_value:
                 try:
                     arg_value = parser(param_type, arg_value)
                 except:
                     raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
 
-            if not arg_value:
+            if arg_value is None:
                 if required:
                     raise ValidationError(ErrorReason.required_parameter, arg_name, 'Argument \'%s\' is missing.' % arg_name)
 
@@ -176,16 +179,15 @@ class FlaskIO(object):
 
             param_values.append(arg_value)
 
-        if multiple:
-            params[param_name] = param_values
-        else:
-            params[param_name] = param_values[0]
+        return param_values if multiple else param_values[0]
 
-    def __fill_param_from_body(self, params, param_name, param_type, schema, required, validate):
-        data = request.get_data()
+    def __parse_param_from_body(self, param_type, schema, required, validate):
+        data = request.data
 
-        if not data and required:
-            raise ValidationError(ErrorReason.required_parameter, 'body', 'body data is missing.')
+        if not data:
+            if required:
+                raise ValidationError(ErrorReason.required_parameter, 'body', 'body data is missing.')
+            return None
 
         mimetype = get_best_match_for_content_type(self.__decoders)
 
@@ -212,7 +214,7 @@ class FlaskIO(object):
         if validate and not validate('body', arg_value):
             raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
 
-        params[param_name] = arg_value
+        return arg_value
 
     def __marshal(self, data, schema, model=None):
         if model and not isinstance(data, model):
