@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from flask import Flask
-from flask import jsonify
 from flask_io import FlaskIO
-from flask_io.errors import ValidationError
+from marshmallow import Schema, fields
 
 app = Flask(__name__)
 
@@ -23,17 +22,23 @@ io = FlaskIO()
 io.init_app(app)
 
 
+class User(object):
+    def __init__(self, username):
+        self.username = username
+
+
+class UserSchema(Schema):
+    username = fields.Integer()
+
+    def make_object(self, data):
+        return User(**data)
+
+
 @app.route('/users', methods=['POST'])
-@io.from_body('user', dict, required=True)
+@io.from_body('user', UserSchema)
+@io.marshal_with(UserSchema)
 def add_user(user):
     return user
-
-
-@app.errorhandler(ValidationError)
-def validation_error_handler(error):
-    response = io.make_response(dict(error_message=error.message))
-    response.status_code = 400
-    return response
 
 if __name__ == '__main__':
     app.run()

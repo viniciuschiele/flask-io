@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from flask import Flask
-from flask import jsonify
 from flask_io import FlaskIO
-from flask_io.errors import ValidationError
+from marshmallow import Schema, fields
 
 app = Flask(__name__)
 
@@ -23,28 +22,30 @@ io = FlaskIO()
 io.init_app(app)
 
 
+class User(object):
+    def __init__(self, username):
+        self.username = username
+
+
+class UserSchema(Schema):
+    username = fields.String()
+
+
 @app.route('/users')
-@io.from_query('name', str, required=True)
-@io.from_query('max_results', int, default=10)
-def list_users(name, max_results):
+@io.from_query('username', fields.Str(required=True))
+@io.from_query('max_results', fields.Int(default=10))
+@io.marshal_with(UserSchema)
+def list_users(username, max_results):
     users = []
 
     for i in range(max_results):
-        users.append({
-            'name': 'user' + str(i)
-        })
+        users.append(User('user' + str(i)))
 
-    if name:
-        users = [user for user in users if user.get('name').find(name) > -1]
+    if username:
+        users = [user for user in users if user.username.find(username) > -1]
 
     return users
 
-
-@app.errorhandler(ValidationError)
-def validation_error_handler(error):
-    response = io.make_response(dict(error_message=error.message))
-    response.status_code = 400
-    return response
 
 if __name__ == '__main__':
     app.run()
