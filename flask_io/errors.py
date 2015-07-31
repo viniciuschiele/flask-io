@@ -12,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import HTTPException
 
 
-class ValidationError(BadRequest):
-    def __init__(self, reason, location, message):
-        super().__init__(message)
-        self.reason = reason
-        self.location = location
-        self.message = message
+class FlaskIOError(HTTPException):
+    def __init__(self, code, errors):
+        self.code = code
+        self.errors = errors
+        self.message = self.errors[0].get('message')
+        super().__init__(self.message)
 
-
-class ErrorReason(object):
-    required_parameter = 'requiredParameter'
-    invalid_parameter = 'invalidParameter'

@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from uuid import uuid4
 from flask import request
 from functools import wraps
+from marshmallow import Schema, fields
+from marshmallow.fields import Field
 from werkzeug.exceptions import InternalServerError, NotAcceptable
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
-from .errors import ErrorReason
-from .errors import ValidationError
-from .parsers import register_default_parsers
+from .errors import FlaskIOError
 from .utils import get_best_match_for_content_type, new_if_isclass, unpack
 
 
@@ -31,10 +32,18 @@ class FlaskIO(object):
         self.__decoders = {}
         self.__encoders = {}
         self.__parsers = {}
+        self.__params_by_func = {}
+        self.__schemas_by_func = {}
+        self.__sources = {
+            'body': self.__decode_body,
+            'cookie': lambda: request.cookies,
+            'form': lambda: request.form,
+            'header': lambda: request.headers,
+            'query': lambda: request.args,
+        }
 
         register_default_decoders(self)
         register_default_encoders(self)
-        register_default_parsers(self)
 
         if app:
             self.init_app(app)
@@ -51,55 +60,37 @@ class FlaskIO(object):
             self.default_encoder = media_type
         self.__encoders[media_type] = func
 
-    def register_parser(self, type_, func):
-        self.__parsers[type_] = func
-
-    def from_body(self, param_name, param_type, schema=None, required=False, validate=None):
+    def from_body(self, param_name, schema):
         schema = new_if_isclass(schema)
 
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                kwargs[param_name] = self.__parse_param_from_body(param_type, schema, required, validate)
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
+        def wrapper(func):
+            self.__register_parameter(func, param_name, schema, 'body')
+            return func
+        return wrapper
 
-    def from_cookie(self, param_name, param_type, default=None, required=False, multiple=False, validate=None, arg_name=None):
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.cookies, arg_name, default, required, multiple, validate)
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
+    def from_cookie(self, param_name, field):
+        def wrapper(func):
+            self.__register_parameter(func, param_name, field, 'cookie')
+            return func
+        return wrapper
 
-    def from_form(self, param_name, param_type, default=None, required=False, multiple=False, validate=None, arg_name=None):
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.form, arg_name, default, required, multiple, validate)
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
+    def from_form(self, param_name, field):
+        def wrapper(func):
+            self.__register_parameter(func, param_name, field, 'form')
+            return func
+        return wrapper
 
-    def from_header(self, param_name, param_type, default=None, required=False, multiple=False, validate=None, arg_name=None):
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.headers, arg_name, default, required, multiple, validate)
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
+    def from_header(self, param_name, field):
+        def wrapper(func):
+            self.__register_parameter(func, param_name, field, 'header')
+            return func
+        return wrapper
 
-    def from_query(self, param_name, param_type, default=None, required=False, multiple=False, validate=None, arg_name=None):
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                kwargs[param_name] = self.__parse_param_from_args(param_name, param_type, request.args, arg_name, default, required, multiple, validate)
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
+    def from_query(self, param_name, field):
+        def wrapper(func):
+            self.__register_parameter(func, param_name, field, 'query')
+            return func
+        return wrapper
 
     def marshal_with(self, schema, model=None):
         schema = new_if_isclass(schema)
@@ -139,54 +130,9 @@ class FlaskIO(object):
 
         return data
 
-    def __parse_param_from_args(self, param_name, param_type, args, arg_name, default, required, multiple, validate):
-        if not arg_name:
-            arg_name = param_name
-
-        parser = self.__parsers.get(param_type)
-
-        if not parser:
-            raise InternalServerError('Parameter type \'%s\' does not have a parser.' % str(param_type))
-
-        if multiple:
-            arg_values = args.getlist(arg_name) or [None]
-        else:
-            arg_values = [args.get(arg_name)]
-
-        param_values = []
-        for arg_value in arg_values:
-            if arg_value == '':
-                arg_value = None
-
-            if arg_value:
-                try:
-                    arg_value = parser(param_type, arg_value)
-                except:
-                    raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
-
-            if arg_value is None:
-                if required:
-                    raise ValidationError(ErrorReason.required_parameter, arg_name, 'Argument \'%s\' is missing.' % arg_name)
-
-                if default:
-                    if callable(default):
-                        arg_value = default()
-                    else:
-                        arg_value = default
-
-            if validate and not validate(arg_name, arg_value):
-                raise ValidationError(ErrorReason.invalid_parameter, arg_name, 'Argument \'%s\' is invalid.' % arg_name)
-
-            param_values.append(arg_value)
-
-        return param_values if multiple else param_values[0]
-
-    def __parse_param_from_body(self, param_type, schema, required, validate):
+    def __decode_body(self):
         data = request.data
-
         if not data:
-            if required:
-                raise ValidationError(ErrorReason.required_parameter, 'body', 'body data is missing.')
             return None
 
         mimetype = get_best_match_for_content_type(self.__decoders)
@@ -196,25 +142,7 @@ class FlaskIO(object):
 
         decoder = self.__decoders.get(mimetype)
 
-        try:
-            arg_value = decoder(data)
-        except:
-            raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
-
-        if schema:
-            result = schema.load(arg_value)
-            if result.errors:
-                key, value = result.errors.popitem()
-                raise ValidationError(ErrorReason.invalid_parameter, key, value[0])
-            arg_value = schema.load(arg_value).data
-
-        if type(arg_value) != param_type:
-            raise InternalServerError('Value decoded is not compatible with parameter type.')
-
-        if validate and not validate('body', arg_value):
-            raise ValidationError(ErrorReason.invalid_parameter, 'body', 'body data is invalid.')
-
-        return arg_value
+        return decoder(data)
 
     def __marshal(self, data, schema, model=None):
         if model and not isinstance(data, model):
@@ -223,12 +151,88 @@ class FlaskIO(object):
         many = isinstance(data, list)
         return schema.dump(data, many=many).data
 
-    def __output(self, func):
+    def __process_func(self, func):
         def decorator():
-            data = func()
-            return self.make_response(data)
+            try:
+                params = self.__params_by_func.get(func)
+
+                if params:
+                    schema = self.__get_schema_by_func(func, params)
+
+                    data = self.__retrieve_param_values(params)
+
+                    data, errors = schema.load(data)
+
+                    if errors:
+                        self.__bad_request_from_validation(errors)
+
+                    resp = func(**data)
+                else:
+                    resp = func()
+
+                return self.make_response(resp)
+            except Exception as e:
+                print(str(e))
+                raise
+
         return decorator
+
+    def __get_schema_by_func(self, func, params):
+        schema = self.__schemas_by_func.get(func)
+
+        if not schema:
+            attrs = {}
+            for param_name, field_or_schema, _ in params:
+                if isinstance(field_or_schema, Schema):
+                    field_or_schema = fields.Nested(field_or_schema)
+                attrs[param_name] = field_or_schema
+            schema = self.__schemas_by_func[func] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
+
+        return schema
+
+    def __bad_request_from_validation(self, errors):
+        items = []
+
+        for field, error in errors.items():
+            if isinstance(error, list):
+                error = error[0]
+
+            if isinstance(error, str):
+                error = {'message': error}
+
+            items.append(error)
+
+        raise FlaskIOError(400, items)
+
+    def __retrieve_param_values(self, params):
+        data = {}
+        for param_name, field_or_schema, location in params:
+            values = self.__sources[location]()
+
+            if isinstance(field_or_schema, Schema):
+                value = values
+            else:
+                if isinstance(field_or_schema, fields.List):
+                    value = values.getlist(param_name)
+                else:
+                    value = values.get(param_name)
+
+            if value is not None:
+                data[param_name] = value
+        return data
+
+    def __register_parameter(self, func, param_name, field_or_schema, location):
+        params = self.__params_by_func.get(func)
+        if params is None:
+            self.__params_by_func[func] = params = []
+
+        if isinstance(field_or_schema, Field) and field_or_schema.attribute:
+            old_param_name = param_name
+            param_name = field_or_schema.attribute
+            field_or_schema.attribute = old_param_name
+
+        params.append((param_name, field_or_schema, location))
 
     def __register_views(self):
         for key in self.__app.view_functions.keys():
-            self.__app.view_functions[key] = self.__output(self.__app.view_functions[key])
+            self.__app.view_functions[key] = self.__process_func(self.__app.view_functions[key])

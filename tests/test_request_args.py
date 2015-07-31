@@ -14,6 +14,7 @@
 
 from flask import Flask
 from flask_io import FlaskIO
+from flask_io import fields
 from unittest import TestCase
 
 
@@ -26,14 +27,14 @@ class TestRequestArgs(TestCase):
 
     def test_default_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', int, default=10)
+        @self.io.from_query('param1', fields.Int(default=10))
         def test(param1):
             self.assertEqual(param1, 10)
         self.client.get('/resource')
 
     def test_invalid_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', int)
+        @self.io.from_query('param1', fields.Int())
         def test(param1):
             pass
         response = self.client.get('/resource?param1=a')
@@ -41,7 +42,7 @@ class TestRequestArgs(TestCase):
 
     def test_required_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', int, required=True)
+        @self.io.from_query('param1', fields.Integer(required=True))
         def test(param1):
             pass
         response = self.client.get('/resource')
@@ -49,7 +50,7 @@ class TestRequestArgs(TestCase):
 
     def test_validate_successfully_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', int, validate=lambda arg, val: 1 <= val <= 10)
+        @self.io.from_query('param1', fields.Integer(validate=lambda val: 1 <= val <= 10))
         def test(param1):
             self.assertEqual(param1, 5)
         response = self.client.get('/resource?param1=5')
@@ -57,7 +58,7 @@ class TestRequestArgs(TestCase):
 
     def test_validate_broken_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', int, validate=lambda arg, val: 1 <= val <= 10)
+        @self.io.from_query('param1', fields.Integer(validate=lambda val: 1 <= val <= 10))
         def test(param1):
             pass
         response = self.client.get('/resource?param1=11')
@@ -65,7 +66,7 @@ class TestRequestArgs(TestCase):
 
     def test_parameter_name_different_from_argument_name(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param2', int, arg_name='param1')
+        @self.io.from_query('param2', fields.Integer(attribute='param1'))
         def test(param2):
             self.assertEqual(param2, 10)
         response = self.client.get('/resource?param1=10')
@@ -73,7 +74,7 @@ class TestRequestArgs(TestCase):
 
     def test_multiple_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', int, multiple=True)
+        @self.io.from_query('param1', fields.List(fields.Int()))
         def test(param1):
             self.assertEqual(param1[0], 10)
             self.assertEqual(param1[1], 20)

