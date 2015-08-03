@@ -15,8 +15,8 @@
 import json
 
 from flask import Flask
-from flask_io import FlaskIO
-from marshmallow import Schema, fields
+from flask_io import FlaskIO, fields
+from marshmallow import Schema
 from unittest import TestCase
 
 
@@ -27,18 +27,18 @@ class TestRequestBody(TestCase):
         self.io.init_app(self.app)
         self.client = self.app.test_client()
 
-#    def test_dict(self):
-#        @self.app.route('/resource', methods=['POST'])
-#        @self.io.from_body('param1', dict)
-#        def test(param1):
-#            self.assertEqual(type(param1), dict)
-#            self.assertEqual(param1.get('id'), 1234)
-#            self.assertEqual(param1.get('name'), 'test')#
+    def test_noschema(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.from_body('param1')
+        def test(param1):
+            self.assertEqual(type(param1), dict)
+            self.assertEqual(param1.get('id'), 1234)
+            self.assertEqual(param1.get('name'), 'test')
 
-#        data = dict(id=1234, name='test')
-#        headers = {'content-type': 'application/json'}
-#        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
-#        self.assertEqual(response.status_code, 200)
+        data = dict(id=1234, name='test')
+        headers = {'content-type': 'application/json'}
+        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
+        self.assertEqual(response.status_code, 200)
 
     def test_schema(self):
         @self.app.route('/resource', methods=['POST'])
