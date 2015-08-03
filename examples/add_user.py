@@ -14,7 +14,7 @@
 
 from flask import Flask
 from flask_io import FlaskIO
-from marshmallow import Schema, fields
+from flask_io import fields, Schema
 
 app = Flask(__name__)
 

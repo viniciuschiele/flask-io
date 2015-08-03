@@ -14,7 +14,7 @@
 
 from flask import Flask
 from flask_io import FlaskIO
-from marshmallow import Schema, fields
+from flask_io import Schema, fields
 
 app = Flask(__name__)
 
@@ -32,8 +32,8 @@ class UserSchema(Schema):
 
 
 @app.route('/users')
-@io.from_query('username', fields.Str(required=True))
-@io.from_query('max_results', fields.Int(default=10))
+@io.from_query('username', fields.String(required=True))
+@io.from_query('max_results', fields.Integer(default=10))
 @io.marshal_with(UserSchema)
 def list_users(username, max_results):
     users = []
