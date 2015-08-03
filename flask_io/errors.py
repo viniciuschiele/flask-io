@@ -21,4 +21,3 @@ class FlaskIOError(HTTPException):
         self.errors = errors
         self.message = self.errors[0].get('message')
         super().__init__(self.message)
-

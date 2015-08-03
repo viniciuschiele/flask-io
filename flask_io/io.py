@@ -15,9 +15,8 @@
 from uuid import uuid4
 from flask import request
 from functools import wraps
-from marshmallow import Schema, fields
-from marshmallow.fields import Field
 from werkzeug.exceptions import InternalServerError, NotAcceptable
+from . import fields, Schema
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import FlaskIOError
@@ -31,15 +30,14 @@ class FlaskIO(object):
         self.__app = None
         self.__decoders = {}
         self.__encoders = {}
-        self.__parsers = {}
         self.__params_by_func = {}
         self.__schemas_by_func = {}
         self.__sources = {
-            'body': self.__decode_body,
-            'cookie': lambda: request.cookies,
-            'form': lambda: request.form,
-            'header': lambda: request.headers,
-            'query': lambda: request.args,
+            'body': lambda n, m: self.__decode_body(),
+            'cookie': lambda n, m: self.__parse_request(request.cookies, n, m),
+            'form': lambda n, m: self.__parse_request(request.form, n, m),
+            'header': lambda n, m: self.__parse_request(request.headers, n, m),
+            'query': lambda n, m: self.__parse_request(request.args, n, m)
         }
 
         register_default_decoders(self)
@@ -52,15 +50,9 @@ class FlaskIO(object):
         self.__app = app
         self.__app.before_first_request(self.__register_views)
 
-    def register_decoder(self, media_type, func):
-        self.__decoders[media_type] = func
-
-    def register_encoder(self, media_type, func):
-        if not self.default_encoder:
-            self.default_encoder = media_type
-        self.__encoders[media_type] = func
-
-    def from_body(self, param_name, schema):
+    def from_body(self, param_name, schema=None):
+        if not schema:
+            schema = fields.Raw()
         schema = new_if_isclass(schema)
 
         def wrapper(func):
@@ -130,6 +122,14 @@ class FlaskIO(object):
 
         return data
 
+    def register_decoder(self, media_type, func):
+        self.__decoders[media_type] = func
+
+    def register_encoder(self, media_type, func):
+        if not self.default_encoder:
+            self.default_encoder = media_type
+        self.__encoders[media_type] = func
+
     def __decode_body(self):
         data = request.data
         if not data:
@@ -144,7 +144,7 @@ class FlaskIO(object):
 
         return decoder(data)
 
-    def __marshal(self, data, schema, model=None):
+    def __marshal(self, data, schema, model):
         if model and not isinstance(data, model):
             return data
 
@@ -153,28 +153,23 @@ class FlaskIO(object):
 
     def __process_func(self, func):
         def decorator():
-            try:
-                params = self.__params_by_func.get(func)
+            params = self.__params_by_func.get(func)
 
-                if params:
-                    schema = self.__get_schema_by_func(func, params)
+            if params:
+                schema = self.__get_schema_by_func(func, params)
 
-                    data = self.__retrieve_param_values(params)
+                values = self.__retrieve_param_values(params)
 
-                    data, errors = schema.load(data)
+                data, errors = schema.load(values)
 
-                    if errors:
-                        self.__bad_request_from_validation(errors)
+                if errors:
+                    self.__bad_request_from_validation(errors)
 
-                    resp = func(**data)
-                else:
-                    resp = func()
+                resp = func(**data)
+            else:
+                resp = func()
 
-                return self.make_response(resp)
-            except Exception as e:
-                print(str(e))
-                raise
-
+            return self.make_response(resp)
         return decorator
 
     def __get_schema_by_func(self, func, params):
@@ -207,16 +202,8 @@ class FlaskIO(object):
     def __retrieve_param_values(self, params):
         data = {}
         for param_name, field_or_schema, location in params:
-            values = self.__sources[location]()
-
-            if isinstance(field_or_schema, Schema):
-                value = values
-            else:
-                if isinstance(field_or_schema, fields.List):
-                    value = values.getlist(param_name)
-                else:
-                    value = values.get(param_name)
-
+            multiple = isinstance(field_or_schema, fields.List)
+            value = self.__sources[location](param_name, multiple)
             if value is not None:
                 data[param_name] = value
         return data
@@ -226,7 +213,7 @@ class FlaskIO(object):
         if params is None:
             self.__params_by_func[func] = params = []
 
-        if isinstance(field_or_schema, Field) and field_or_schema.attribute:
+        if isinstance(field_or_schema, fields.Field) and field_or_schema.attribute:
             old_param_name = param_name
             param_name = field_or_schema.attribute
             field_or_schema.attribute = old_param_name
@@ -236,3 +223,8 @@ class FlaskIO(object):
     def __register_views(self):
         for key in self.__app.view_functions.keys():
             self.__app.view_functions[key] = self.__process_func(self.__app.view_functions[key])
+
+    def __parse_request(self, data, name, multiple):
+        if multiple:
+            return data.getlist(name)
+        return data.get(name)
