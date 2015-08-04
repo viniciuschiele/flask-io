@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from uuid import uuid4
 from flask import request
-from functools import wraps
+from functools import wraps, partial
+from uuid import uuid4
 from werkzeug.exceptions import InternalServerError, NotAcceptable
 from . import fields, Schema
 from .encoders import register_default_decoders
@@ -49,6 +49,8 @@ class FlaskIO(object):
     def init_app(self, app):
         self.__app = app
         self.__app.before_first_request(self.__register_views)
+        self.__app.handle_exception = partial(self.__error_router, app.handle_exception)
+        self.__app.handle_user_exception = partial(self.__error_router, app.handle_user_exception)
 
     def bad_request(self, data):
         return self.make_response((data, 400))
@@ -184,7 +186,7 @@ class FlaskIO(object):
                 data, errors = schema.load(values)
 
                 if errors:
-                    self.__bad_request_from_validation(errors)
+                    raise FlaskIOError(400, 'Bad request.', errors)
 
                 kwargs.update(data)
 
@@ -205,20 +207,6 @@ class FlaskIO(object):
             schema = self.__schemas_by_func[func] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
 
         return schema
-
-    def __bad_request_from_validation(self, errors):
-        items = []
-
-        for field, error in errors.items():
-            if isinstance(error, list):
-                error = error[0]
-
-            if isinstance(error, str):
-                error = {'message': error}
-
-            items.append(error)
-
-        raise FlaskIOError(400, items)
 
     def __retrieve_param_values(self, params):
         data = {}
@@ -252,3 +240,20 @@ class FlaskIO(object):
         if multiple:
             return data.getlist(name)
         return data.get(name)
+
+    def __error_router(self, original_handler, e):
+        try:
+            return original_handler(e)
+        except Exception:
+            return self.__handle_error(e)
+
+    def __handle_error(self, e):
+        if isinstance(e, FlaskIOError):
+            data = {
+                'code': e.code,
+                'message': e.message,
+                'model_state': e.model_state
+            }
+            return self.make_response((data, e.code))
+
+        raise e

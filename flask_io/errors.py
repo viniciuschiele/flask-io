@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from werkzeug.exceptions import HTTPException
 
-
-class FlaskIOError(HTTPException):
-    def __init__(self, code, errors):
+class FlaskIOError(Exception):
+    def __init__(self, code, message, model_state=None):
         self.code = code
-        self.errors = errors
-        self.message = self.errors[0].get('message')
+        self.message = message
+        self.model_state = model_state
         super().__init__(self.message)
