@@ -173,7 +173,7 @@ class FlaskIO(object):
         return data
 
     def __process_func(self, func):
-        def decorator():
+        def decorator(**kwargs):
             params = self.__params_by_func.get(func)
 
             if params:
@@ -186,9 +186,9 @@ class FlaskIO(object):
                 if errors:
                     self.__bad_request_from_validation(errors)
 
-                resp = func(**data)
-            else:
-                resp = func()
+                kwargs.update(data)
+
+            resp = func(**kwargs)
 
             return self.make_response(resp)
         return decorator
