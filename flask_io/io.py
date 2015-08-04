@@ -51,8 +51,6 @@ class FlaskIO(object):
         self.__app.before_first_request(self.__register_views)
 
     def from_body(self, param_name, schema=None):
-        if not schema:
-            schema = fields.Raw()
         schema = new_if_isclass(schema)
 
         def wrapper(func):
@@ -78,7 +76,7 @@ class FlaskIO(object):
             return func
         return wrapper
 
-    def from_query(self, param_name, field):
+    def from_query(self, param_name, field=None):
         def wrapper(func):
             self.__register_parameter(func, param_name, field, 'query')
             return func
@@ -209,6 +207,9 @@ class FlaskIO(object):
         return data
 
     def __register_parameter(self, func, param_name, field_or_schema, location):
+        if not field_or_schema:
+            field_or_schema = fields.Raw()
+
         params = self.__params_by_func.get(func)
         if params is None:
             self.__params_by_func[func] = params = []
