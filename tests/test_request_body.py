@@ -38,7 +38,7 @@ class TestRequestBody(TestCase):
         data = dict(id=1234, name='test')
         headers = {'content-type': 'application/json'}
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_schema(self):
         @self.app.route('/resource', methods=['POST'])
@@ -52,7 +52,7 @@ class TestRequestBody(TestCase):
 
         headers = {'content-type': 'application/json'}
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_invalid_schema(self):
         @self.app.route('/resource', methods=['POST'])

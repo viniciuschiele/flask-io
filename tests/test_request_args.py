@@ -54,7 +54,7 @@ class TestRequestArgs(TestCase):
         def test(param1):
             self.assertEqual(param1, 5)
         response = self.client.get('/resource?param1=5')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_validate_broken_parameter(self):
         @self.app.route('/resource', methods=['GET'])
@@ -70,7 +70,7 @@ class TestRequestArgs(TestCase):
         def test(param2):
             self.assertEqual(param2, 10)
         response = self.client.get('/resource?param1=10')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_multiple_parameter(self):
         @self.app.route('/resource', methods=['GET'])
@@ -79,5 +79,5 @@ class TestRequestArgs(TestCase):
             self.assertEqual(param1[0], 10)
             self.assertEqual(param1[1], 20)
         response = self.client.get('/resource?param1=10&param1=20')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
