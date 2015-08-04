@@ -1,7 +1,7 @@
 =================================
 Flask IO
 =================================
-Flask IO is a library for Python 3+ which parses the Flask request and turns it into method parameters.
+Flask IO is a library for Python 3+ which make easier to parse request arguments and return responses.
 
 Documentation
 ===============
