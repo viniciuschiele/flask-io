@@ -15,12 +15,13 @@
 from flask import request
 from functools import wraps, partial
 from uuid import uuid4
-from werkzeug.exceptions import InternalServerError, NotAcceptable
+from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from . import fields, Schema
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import FlaskIOError
 from .utils import get_best_match_for_content_type, get_func_name, new_if_isclass, unpack
+from .utils import http_status_message
 
 
 class FlaskIO(object):
@@ -250,12 +251,24 @@ class FlaskIO(object):
             return self.__handle_error(e)
 
     def __handle_error(self, e):
-        if isinstance(e, FlaskIOError):
-            data = {
-                'code': e.code,
-                'message': e.message,
-                'model_state': e.model_state
-            }
-            return self.make_response((data, e.code))
+        model_state = None
 
-        raise e
+        if isinstance(e, FlaskIOError):
+            code = e.code
+            message = e.message
+            model_state = e.model_state
+
+        elif isinstance(e, HTTPException):
+            code = e.code
+            message = getattr(e, 'description', http_status_message(code))
+
+        else:
+            code = 500
+            message = http_status_message(code)
+
+        data = dict(code=code, message=message)
+
+        if model_state:
+            data['model_state'] = model_state
+
+        return self.make_response((data, code))

@@ -14,6 +14,7 @@
 
 from flask import request
 from inspect import isclass
+from werkzeug.http import HTTP_STATUS_CODES
 
 
 def get_best_match_for_content_type(mimetypes):
@@ -28,7 +29,11 @@ def get_best_match_for_content_type(mimetypes):
 
 def get_func_name(func):
     return func.__module__ + "." + func.__name__
-    
+
+
+def http_status_message(code):
+    return HTTP_STATUS_CODES.get(code, '')
+
 
 def new_if_isclass(value):
     return value() if isclass(value) else value
