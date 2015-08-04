@@ -27,10 +27,11 @@ class TestRequestArgs(TestCase):
 
     def test_default_parameter(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', fields.Int(default=10))
+        @self.io.from_query('param1', fields.Int(missing=10))
         def test(param1):
             self.assertEqual(param1, 10)
-        self.client.get('/resource')
+        response = self.client.get('/resource')
+        self.assertEqual(response.status_code, 204)
 
     def test_invalid_parameter(self):
         @self.app.route('/resource', methods=['GET'])
