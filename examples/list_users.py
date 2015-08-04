@@ -33,7 +33,7 @@ class UserSchema(Schema):
 
 @app.route('/users')
 @io.from_query('username', fields.String(required=True))
-@io.from_query('max_results', fields.Integer(default=10))
+@io.from_query('max_results', fields.Integer(missing=10))
 @io.marshal_with(UserSchema)
 def list_users(username, max_results):
     users = []
