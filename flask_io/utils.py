@@ -26,10 +26,12 @@ def get_best_match_for_content_type(mimetypes):
     return None
 
 
+def get_func_name(func):
+    return func.__module__ + "." + func.__name__
+    
+
 def new_if_isclass(value):
-    if isclass(value):
-        return value()
-    return value
+    return value() if isclass(value) else value
 
 
 def unpack(value):

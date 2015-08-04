@@ -20,7 +20,7 @@ from . import fields, Schema
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
 from .errors import FlaskIOError
-from .utils import get_best_match_for_content_type, new_if_isclass, unpack
+from .utils import get_best_match_for_content_type, get_func_name, new_if_isclass, unpack
 
 
 class FlaskIO(object):
@@ -176,10 +176,12 @@ class FlaskIO(object):
 
     def __process_func(self, func):
         def decorator(**kwargs):
-            params = self.__params_by_func.get(func)
+            func_name = get_func_name(func)
+
+            params = self.__params_by_func.get(func_name)
 
             if params:
-                schema = self.__get_schema_by_func(func, params)
+                schema = self.__get_schema_by_func(func_name, params)
 
                 values = self.__retrieve_param_values(params)
 
@@ -195,8 +197,8 @@ class FlaskIO(object):
             return self.make_response(resp)
         return decorator
 
-    def __get_schema_by_func(self, func, params):
-        schema = self.__schemas_by_func.get(func)
+    def __get_schema_by_func(self, func_name, params):
+        schema = self.__schemas_by_func.get(func_name)
 
         if not schema:
             attrs = {}
@@ -204,7 +206,7 @@ class FlaskIO(object):
                 if isinstance(field_or_schema, Schema):
                     field_or_schema = fields.Nested(field_or_schema, required=True)
                 attrs[param_name] = field_or_schema
-            schema = self.__schemas_by_func[func] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
+            schema = self.__schemas_by_func[func_name] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
 
         return schema
 
@@ -213,17 +215,17 @@ class FlaskIO(object):
         for param_name, field_or_schema, location in params:
             multiple = isinstance(field_or_schema, fields.List)
             value = self.__sources[location](param_name, multiple)
-            if value is not None:
+            if value is not None and value != '':
                 data[param_name] = value
         return data
 
     def __register_parameter(self, func, param_name, field_or_schema, location):
-        if not field_or_schema:
-            field_or_schema = fields.Raw()
+        field_or_schema = field_or_schema or fields.Raw()
+        func_name = get_func_name(func)
 
-        params = self.__params_by_func.get(func)
+        params = self.__params_by_func.get(func_name)
         if params is None:
-            self.__params_by_func[func] = params = []
+            params = self.__params_by_func[func_name] = []
 
         if isinstance(field_or_schema, fields.Field) and field_or_schema.attribute:
             old_param_name = param_name
