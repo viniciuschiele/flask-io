@@ -50,6 +50,22 @@ class FlaskIO(object):
         self.__app = app
         self.__app.before_first_request(self.__register_views)
 
+    def bad_request(self, data):
+        return self.make_response((data, 400))
+
+    def ok(self, data, schema=None):
+        data = self.__marshal(data, schema)
+        return self.make_response(data)
+
+    def no_content(self):
+        return self.make_response(None)
+
+    def not_found(self, data):
+        return self.make_response((data, 404))
+
+    def unauthorized(self, data):
+        return self.make_response((data, 401))
+
     def from_body(self, param_name, schema=None):
         schema = new_if_isclass(schema)
 
@@ -149,7 +165,7 @@ class FlaskIO(object):
 
         return decoder(data)
 
-    def __marshal(self, data, schema, model):
+    def __marshal(self, data, schema, model=None):
         if model and not isinstance(data, model):
             return data
 
