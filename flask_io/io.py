@@ -202,7 +202,7 @@ class FlaskIO(object):
             attrs = {}
             for param_name, field_or_schema, _ in params:
                 if isinstance(field_or_schema, Schema):
-                    field_or_schema = fields.Nested(field_or_schema)
+                    field_or_schema = fields.Nested(field_or_schema, required=True)
                 attrs[param_name] = field_or_schema
             schema = self.__schemas_by_func[func] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
 
