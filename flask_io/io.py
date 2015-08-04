@@ -109,7 +109,14 @@ class FlaskIO(object):
             if encoder is None:
                 raise InternalServerError()
 
-            data_bytes = encoder(data)
+            if data:
+                data_bytes = encoder(data)
+            else:
+                data_bytes = None
+
+            if status is None:
+                status = 200 if data else 204
+
             data = self.__app.response_class(data_bytes, mimetype=media_type)
 
         if status is not None:
