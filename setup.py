@@ -10,7 +10,7 @@ setup(
     author_email='vinicius.chiele@gmail.com',
     description='Flask IO is a library for Python 3+ which make easier to parse request arguments and return responses.',
     keywords=['flask', 'rest', 'parse', 'encode', 'decode', 'request', 'json'],
-    install_requires=['flask>=0.10.1', 'python-dateutil>=2.4.2', 'marshmallow==1.2.6'],
+    install_requires=['flask>=0.10.1', 'python-dateutil>=2.4.2', 'marshmallow==2.0.0b5'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
