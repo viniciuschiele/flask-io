@@ -53,8 +53,8 @@ class FlaskIO(object):
     def bad_request(self, data):
         return self.make_response((data, 400))
 
-    def ok(self, data, schema=None):
-        data = self.__marshal(data, schema)
+    def ok(self, data, schema=None, envelope=None):
+        data = self.__marshal(data, schema, envelope)
         return self.make_response(data)
 
     def no_content(self):
@@ -98,7 +98,7 @@ class FlaskIO(object):
             return func
         return wrapper
 
-    def marshal_with(self, schema, model=None):
+    def marshal_with(self, schema, envelope=None):
         schema = new_if_isclass(schema)
 
         def decorator(func):
@@ -107,9 +107,9 @@ class FlaskIO(object):
                 data = func(*args, **kwargs)
                 if isinstance(data, tuple):
                     data, status, headers = unpack(data)
-                    return self.__marshal(data, schema, model), status, headers
+                    return self.__marshal(data, schema, envelope), status, headers
                 else:
-                    return self.__marshal(data, schema, model)
+                    return self.__marshal(data, schema, envelope)
             return wrapper
         return decorator
 
@@ -165,12 +165,12 @@ class FlaskIO(object):
 
         return decoder(data)
 
-    def __marshal(self, data, schema, model=None):
-        if model and not isinstance(data, model):
-            return data
-
+    def __marshal(self, data, schema, envelope=None):
         many = isinstance(data, list)
-        return schema.dump(data, many=many).data
+        data = schema.dump(data, many=many).data
+        if envelope:
+            return {envelope: data}
+        return data
 
     def __process_func(self, func):
         def decorator():
