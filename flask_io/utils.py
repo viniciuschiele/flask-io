@@ -58,6 +58,6 @@ def convert_marshmallow_errors(errors):
             error = error[0]
 
         if isinstance(error, str):
-            items.append(Error(None, error, None, field))
+            items.append(Error(error, field=field))
 
     return items

@@ -132,12 +132,12 @@ class FlaskIO(object):
                 raise InternalServerError()
 
             if status is None:
-                status = 200 if data else 204
+                status = 200 if data is not None else 204
 
-            if data:
-                data_bytes = encoder(data)
-            else:
+            if data is None:
                 data_bytes = None
+            else:
+                data_bytes = encoder(data)
 
             data = self.__app.response_class(data_bytes, mimetype=media_type)
 

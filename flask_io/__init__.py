@@ -14,3 +14,4 @@
 
 from marshmallow import Schema
 from .io import FlaskIO
+from .errors import Error

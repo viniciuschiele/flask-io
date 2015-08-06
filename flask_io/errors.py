@@ -14,8 +14,8 @@
 
 
 class Error(object):
-    def __init__(self, code, message, location=None, field=None):
-        self.code = code
+    def __init__(self, message, code=None, location=None, field=None):
         self.message = message
+        self.code = code
         self.location = location
         self.field = field
