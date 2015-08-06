@@ -15,6 +15,7 @@
 from flask import request
 from inspect import isclass
 from werkzeug.http import HTTP_STATUS_CODES
+from .errors import Error
 
 
 def get_best_match_for_content_type(mimetypes):
@@ -42,3 +43,21 @@ def new_if_isclass(value):
 def unpack(value):
     data, status, headers = value + (None,) * (3 - len(value))
     return data, status, headers
+
+
+def convert_marshmallow_errors(errors):
+    items = []
+
+    for field, error in errors.items():
+        if isinstance(error, dict):
+            for item in convert_marshmallow_errors(error):
+                items.append(item)
+            continue
+
+        if isinstance(error, list):
+            error = error[0]
+
+        if isinstance(error, str):
+            items.append(Error(None, error, None, field))
+
+    return items

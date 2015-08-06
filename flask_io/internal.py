@@ -12,10 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from marshmallow import Schema, fields
 
-class Error(object):
-    def __init__(self, code, message, location=None, field=None):
+
+class ErrorResult(object):
+    def __init__(self, code, errors):
         self.code = code
-        self.message = message
-        self.location = location
-        self.field = field
+
+        if isinstance(errors, list):
+            self.errors = errors
+        else:
+            self.errors = [errors]
+
+        self.message = self.errors[0].message
+
+
+class ErrorSchema(Schema):
+    code = fields.String()
+    message = fields.String()
+    location = fields.String()
+    field = fields.String()
+
+
+class ErrorResultSchema(Schema):
+    code = fields.Integer()
+    message = fields.String()
+    errors = fields.Nested(ErrorSchema, many=True)

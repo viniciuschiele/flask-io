@@ -19,9 +19,9 @@ from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptabl
 from . import fields, Schema
 from .encoders import register_default_decoders
 from .encoders import register_default_encoders
-from .errors import FlaskIOError
+from .internal import ErrorResult, ErrorResultSchema
 from .utils import get_best_match_for_content_type, get_func_name, new_if_isclass, unpack
-from .utils import http_status_message
+from .utils import convert_marshmallow_errors, http_status_message
 
 
 class FlaskIO(object):
@@ -53,21 +53,24 @@ class FlaskIO(object):
         self.__app.handle_exception = partial(self.__error_router, app.handle_exception)
         self.__app.handle_user_exception = partial(self.__error_router, app.handle_user_exception)
 
-    def bad_request(self, data):
-        return self.make_response((data, 400))
+    def bad_request(self, errors):
+        error = self.__marshal(ErrorResult(400, errors), ErrorResultSchema())
+        return self.make_response((error, 400))
+
+    def no_content(self):
+        return self.make_response(None)
+
+    def not_found(self, errors):
+        error = self.__marshal(ErrorResult(404, errors), ErrorResultSchema())
+        return self.make_response((error, 404))
 
     def ok(self, data, schema=None, envelope=None):
         data = self.__marshal(data, schema, envelope)
         return self.make_response(data)
 
-    def no_content(self):
-        return self.make_response(None)
-
-    def not_found(self, data):
-        return self.make_response((data, 404))
-
-    def unauthorized(self, data):
-        return self.make_response((data, 401))
+    def unauthorized(self, errors):
+        error = self.__marshal(ErrorResult(401, errors), ErrorResultSchema())
+        return self.make_response((error, 401))
 
     def from_body(self, param_name, schema=None):
         schema = new_if_isclass(schema)
@@ -128,13 +131,13 @@ class FlaskIO(object):
             if encoder is None:
                 raise InternalServerError()
 
+            if status is None:
+                status = 200 if data else 204
+
             if data:
                 data_bytes = encoder(data)
             else:
                 data_bytes = None
-
-            if status is None:
-                status = 200 if data else 204
 
             data = self.__app.response_class(data_bytes, mimetype=media_type)
 
@@ -183,13 +186,11 @@ class FlaskIO(object):
 
             if params:
                 schema = self.__get_schema_by_func(func_name, params)
-
                 values = self.__retrieve_param_values(params)
-
                 data, errors = schema.load(values)
 
                 if errors:
-                    raise FlaskIOError(400, 'Bad request.', errors)
+                    return self.bad_request(convert_marshmallow_errors(errors))
 
                 kwargs.update(data)
 
@@ -251,24 +252,13 @@ class FlaskIO(object):
             return self.__handle_error(e)
 
     def __handle_error(self, e):
-        model_state = None
-
-        if isinstance(e, FlaskIOError):
-            code = e.code
-            message = e.message
-            model_state = e.model_state
-
-        elif isinstance(e, HTTPException):
+        if isinstance(e, HTTPException):
             code = e.code
             message = getattr(e, 'description', http_status_message(code))
-
         else:
             code = 500
             message = http_status_message(code)
 
-        data = dict(code=code, message=message)
+        error = self.__marshal(ErrorResult(code, message), ErrorResultSchema())
 
-        if model_state:
-            data['model_state'] = model_state
-
-        return self.make_response((data, code))
+        return self.make_response((error, code))
