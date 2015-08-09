@@ -13,9 +13,17 @@
 # limitations under the License.
 
 
-from .binder import Binder
-from .binder import bind
-from .sources import FromBody
-from .sources import FromForm
-from .sources import FromHeader
-from .sources import FromQuery
+class FlaskIOError(Exception):
+    pass
+
+
+class InvalidArgumentError(FlaskIOError):
+    def __init__(self, arg_name, *args, **kwargs):
+        super().__init__(arg_name, args, kwargs)
+        self.arg_name = arg_name
+
+
+class RequiredArgumentError(FlaskIOError):
+    def __init__(self, arg_name, *args, **kwargs):
+        super().__init__(arg_name, args, kwargs)
+        self.arg_name = arg_name

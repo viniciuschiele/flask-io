@@ -15,17 +15,21 @@
 
 from flask import Flask
 from flask import jsonify
-from flask_binding import bind
-from flask_binding import FromQuery
-from flask_binding.errors import InvalidArgumentError
-from flask_binding.errors import RequiredArgumentError
+from flask_io import FlaskIO
+from flask_io.errors import InvalidArgumentError
+from flask_io.errors import RequiredArgumentError
+
 
 app = Flask(__name__)
 app.debug = True
 
+io = FlaskIO()
+io.init_app(app)
+
+
 @app.route('/users')
-@bind({'name': FromQuery(str),
-       'max_results': FromQuery(int, default=10)})
+@io.from_query('name', str, required=True)
+@io.from_query('max_results', int, default=10)
 def list_users(name, max_results):
     users = []
 
@@ -35,9 +39,10 @@ def list_users(name, max_results):
         })
 
     if name:
-        users = [user for user in users if user.get('name').startswith(name)]
+        users = [user for user in users if user.get('name').find(name) > -1]
 
     return jsonify(users=users)
+
 
 @app.errorhandler(InvalidArgumentError)
 def invalid_argument_handler(error):
@@ -45,11 +50,13 @@ def invalid_argument_handler(error):
     response.status_code = 400
     return response
 
+
 @app.errorhandler(RequiredArgumentError)
 def required_argument_handler(error):
     response = jsonify(error_message='Argument %s is missing' % error.arg_name)
     response.status_code = 400
     return response
+
 
 if __name__ == '__main__':
     app.run()

@@ -12,18 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import dateutil.parser
 
-class BindingError(Exception):
-    pass
-
-
-class InvalidArgumentError(BindingError):
-    def __init__(self, arg_name, *args, **kwargs):
-        super().__init__(arg_name, args, kwargs)
-        self.arg_name = arg_name
+from abc import ABCMeta
+from abc import abstractmethod
 
 
-class RequiredArgumentError(BindingError):
-    def __init__(self, arg_name, message):
-        super().__init__(arg_name, message)
-        self.arg_name = arg_name
+class InputParser(metaclass=ABCMeta):
+    @abstractmethod
+    def parse(self, value):
+        pass
+
+
+class PrimitiveParser(InputParser):
+    def __init__(self, type_):
+        self.type = type_
+
+    def parse(self, value):
+        return self.type(value)
+
+
+class BooleanParser(InputParser):
+    TRUE_VALUES = ['yes', 'true', 'y', 't', '1']
+
+    def parse(self, value):
+        return value.lower() in self.TRUE_VALUES
+
+
+class DateTimeParser(InputParser):
+    def parse(self, value):
+        return dateutil.parser.parse(value)

@@ -16,16 +16,19 @@
 from flask import Flask
 from flask import jsonify
 from flask import Response
-from flask_binding import bind
-from flask_binding import FromBody
-from flask_binding.errors import InvalidArgumentError
-from flask_binding.errors import RequiredArgumentError
+from flask_io import FlaskIO
+from flask_io.errors import InvalidArgumentError
+from flask_io.errors import RequiredArgumentError
 
 app = Flask(__name__)
 app.debug = True
 
+io = FlaskIO()
+io.init_app(app)
+
+
 @app.route('/users', methods=['POST'])
-@bind({'user': FromBody(dict, required=True)})
+@io.from_body('user', dict, required=True)
 def add_user(user):
     id = user.get('id')
 
@@ -33,11 +36,13 @@ def add_user(user):
 
     return Response(status=204)
 
+
 @app.errorhandler(InvalidArgumentError)
 def invalid_argument_handler(error):
     response = jsonify(error_message='Argument %s is invalid' % error.arg_name)
     response.status_code = 400
     return response
+
 
 @app.errorhandler(RequiredArgumentError)
 def required_argument_handler(error):
