@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Binding',
-    version='0.6.0',
+    version='0.6.2',
     packages=['flask_binding'],
     url='https://github.com/viniciuschiele/flask-binding',
     license='Apache 2.0',
