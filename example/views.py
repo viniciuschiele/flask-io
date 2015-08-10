@@ -13,55 +13,14 @@
 # limitations under the License.
 
 from flask import Flask
-from flask_io import FlaskIO
-from flask_io import Error, fields, Schema
+from flask_io import FlaskIO, Error, fields
 from datetime import datetime
-from uuid import uuid4
+from example.schemas import UserSchema, PatchUserSchema, UpdateUserSchema
 
 app = Flask(__name__)
 
 io = FlaskIO()
 io.init_app(app)
-
-
-class User(object):
-    def __init__(self, id, username, first_name, last_name, enabled):
-        self.id = id
-        self.username = username
-        self.first_name = first_name
-        self.last_name = last_name
-        self.enabled = enabled
-        self.created_at = None
-
-
-class UserSchema(Schema):
-    id = fields.UUID(dump_only=True)
-    username = fields.String(required=True)
-    first_name = fields.String(required=True)
-    last_name = fields.String(required=True)
-    email = fields.Email(required=True)
-    enabled = fields.Boolean(required=True)
-    created_at = fields.DateTime(dump_only=True)
-
-    def make_object(self, data):
-        return User(**data)
-
-
-class UpdateUserSchema(Schema):
-    first_name = fields.String(required=True)
-    last_name = fields.String(required=True)
-    email = fields.Email(required=True)
-    enabled = fields.Boolean(required=True)
-
-    def make_object(self, data):
-        return User(**data)
-
-
-class PatchUserSchema(Schema):
-    first_name = fields.String()
-    last_name = fields.String()
-    email = fields.Email()
-
 
 store = dict()
 
@@ -70,9 +29,11 @@ store = dict()
 @io.from_body('user', UserSchema)
 @io.marshal_with(UserSchema)
 def add_user(user):
-    user.id = str(uuid4())
+    if store.get(user.username):
+        return io.conflict('User already exists: ' + user.username)
+
     user.created_at = datetime.now()
-    store[user.id] = user
+    store[user.username] = user
     return user
 
 
@@ -89,14 +50,14 @@ def get_users(username, max_results):
     return users[:max_results]
 
 
-@app.route('/users/<user_id>', methods=['POST'])
+@app.route('/users/<username>', methods=['POST'])
 @io.from_body('new_user', UpdateUserSchema)
 @io.marshal_with(UserSchema)
-def update_user(user_id, new_user):
-    user = store.get(user_id)
+def update_user(username, new_user):
+    user = store.get(username)
 
     if not user:
-        return io.not_found(Error('User not found: ' + user_id))
+        return io.not_found('User not found: ' + username)
 
     user.first_name = new_user.first_name
     user.last_name = new_user.last_name
@@ -105,14 +66,14 @@ def update_user(user_id, new_user):
     return user
 
 
-@app.route('/users/<user_id>', methods=['PATCH'])
+@app.route('/users/<username>', methods=['PATCH'])
 @io.from_body('new_user', PatchUserSchema)
 @io.marshal_with(UserSchema)
-def patch_user(user_id, new_user):
-    user = store.get(user_id)
+def patch_user(username, new_user):
+    user = store.get(username)
 
     if not user:
-        return io.not_found(Error('User not found: ' + user_id))
+        return io.not_found('User not found: ' + username)
 
     user.first_name = new_user.get('first_name', user.first_name)
     user.last_name = new_user.get('last_name', user.last_name)
