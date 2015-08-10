@@ -13,13 +13,16 @@
 # limitations under the License.
 
 from marshmallow import Schema, fields
+from .errors import Error
 
 
 class ErrorResult(object):
     def __init__(self, code, errors):
         self.code = code
 
-        if isinstance(errors, list):
+        if isinstance(errors, str):
+            self.errors = [Error(errors)]
+        elif isinstance(errors, list):
             self.errors = errors
         else:
             self.errors = [errors]
