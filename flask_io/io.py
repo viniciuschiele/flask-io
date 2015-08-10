@@ -13,12 +13,11 @@
 # limitations under the License.
 
 from flask import request
-from functools import wraps, partial
+from functools import partial
 from uuid import uuid4
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from . import fields, Schema
-from .encoders import register_default_decoders
-from .encoders import register_default_encoders
+from .encoders import register_default_decoders, register_default_encoders
 from .internal import ErrorResult, ErrorResultSchema
 from .utils import get_best_match_for_content_type, get_func_name, new_if_isclass, unpack
 from .utils import convert_marshmallow_errors, http_status_message
@@ -31,6 +30,7 @@ class FlaskIO(object):
         self.__app = None
         self.__decoders = {}
         self.__encoders = {}
+        self.__marshal_by_func = {}
         self.__params_by_func = {}
         self.__schemas_by_func = {}
         self.__sources = {
@@ -107,17 +107,10 @@ class FlaskIO(object):
     def marshal_with(self, schema, envelope=None):
         schema = new_if_isclass(schema)
 
-        def decorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                data = func(*args, **kwargs)
-                if isinstance(data, tuple):
-                    data, status, headers = unpack(data)
-                    return self.__marshal(data, schema, envelope), status, headers
-                else:
-                    return self.__marshal(data, schema, envelope)
-            return wrapper
-        return decorator
+        def wrapper(func):
+            self.__register_marshal(func, schema, envelope)
+            return func
+        return wrapper
 
     def make_response(self, data):
         status = headers = None
@@ -171,6 +164,19 @@ class FlaskIO(object):
 
         return decoder(data)
 
+    def __get_schema_by_func(self, func_name, params):
+        schema = self.__schemas_by_func.get(func_name)
+
+        if not schema:
+            attrs = {}
+            for param_name, field_or_schema, _ in params:
+                if isinstance(field_or_schema, Schema):
+                    field_or_schema = fields.Nested(field_or_schema, required=True)
+                attrs[param_name] = field_or_schema
+            schema = self.__schemas_by_func[func_name] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
+
+        return schema
+
     def __marshal(self, data, schema, envelope=None):
         many = isinstance(data, list)
         data = schema.dump(data, many=many).data
@@ -196,21 +202,13 @@ class FlaskIO(object):
 
             resp = func(**kwargs)
 
+            if not isinstance(resp, self.__app.response_class):
+                schema, envelope = self.__marshal_by_func.get(get_func_name(func))
+                if schema:
+                    resp = self.__marshal(resp, schema, envelope)
+
             return self.make_response(resp)
         return decorator
-
-    def __get_schema_by_func(self, func_name, params):
-        schema = self.__schemas_by_func.get(func_name)
-
-        if not schema:
-            attrs = {}
-            for param_name, field_or_schema, _ in params:
-                if isinstance(field_or_schema, Schema):
-                    field_or_schema = fields.Nested(field_or_schema, required=True)
-                attrs[param_name] = field_or_schema
-            schema = self.__schemas_by_func[func_name] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
-
-        return schema
 
     def __retrieve_param_values(self, params):
         data = {}
@@ -235,6 +233,10 @@ class FlaskIO(object):
             field_or_schema.attribute = old_param_name
 
         params.append((param_name, field_or_schema, location))
+
+    def __register_marshal(self, func, schema, envelope):
+        func_name = get_func_name(func)
+        self.__marshal_by_func[func_name] = (schema, envelope)
 
     def __register_views(self):
         for key in self.__app.view_functions.keys():
