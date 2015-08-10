@@ -57,6 +57,10 @@ class FlaskIO(object):
         error = self.__marshal(ErrorResult(400, errors), ErrorResultSchema())
         return self.make_response((error, 400))
 
+    def conflict(self, errors):
+        error = self.__marshal(ErrorResult(409, errors), ErrorResultSchema())
+        return self.make_response((error, 409))
+
     def no_content(self):
         return self.make_response(None)
 
