@@ -206,8 +206,8 @@ class FlaskIO(object):
 
             resp = func(**kwargs)
 
-            if not isinstance(resp, self.__app.response_class):
-                schema, envelope = self.__marshal_by_func.get(get_func_name(func))
+            if resp and not isinstance(resp, self.__app.response_class):
+                schema, envelope = self.__marshal_by_func.get(get_func_name(func)) or (None, None)
                 if schema:
                     resp = self.__marshal(resp, schema, envelope)
 
