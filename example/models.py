@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class User(object):
     def __init__(self, **kwargs):
         self.username = kwargs.get('username', None)

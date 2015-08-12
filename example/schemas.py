@@ -12,35 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask_io import fields, Schema, ValidationError
+from marshmallow import fields, Schema
+from marshmallow.validate import Length
 from .models import User
 
 
-def validate_username(value):
-    if 8 > len(value) > 30:
-        raise ValidationError('Username must be between 6 and 30 characters.')
-
-
-def validate_first_name(value):
-    if len(value) == 0:
-        raise ValidationError('First name cannot be empty.')
-
-    if len(value) > 50:
-        raise ValidationError('First name cannot be greater than 50 characters.')
-
-
-def validate_last_name(value):
-    if len(value) == 0:
-        raise ValidationError('Last name cannot be empty.')
-
-    if len(value) > 50:
-        raise ValidationError('Last name cannot be greater than 50 characters.')
-
-
 class UserSchema(Schema):
-    username = fields.String(required=True, validate=validate_username)
-    first_name = fields.String(required=True, validate=validate_first_name)
-    last_name = fields.String(required=True, validate=validate_last_name)
+    username = fields.String(required=True, validate=Length(8, 30))
+    first_name = fields.String(required=True, validate=Length(1, 50))
+    last_name = fields.String(required=True, validate=Length(1, 50))
     email = fields.Email(required=True)
     enabled = fields.Boolean(required=True)
     created_at = fields.DateTime(dump_only=True)
@@ -50,8 +30,8 @@ class UserSchema(Schema):
 
 
 class UpdateUserSchema(Schema):
-    first_name = fields.String(required=True, validate=validate_first_name)
-    last_name = fields.String(required=True, validate=validate_last_name)
+    first_name = fields.String(required=True, validate=Length(1, 50))
+    last_name = fields.String(required=True, validate=Length(1, 50))
     email = fields.Email(required=True)
     enabled = fields.Boolean(required=True)
 
@@ -60,7 +40,7 @@ class UpdateUserSchema(Schema):
 
 
 class PatchUserSchema(Schema):
-    first_name = fields.String(validate=validate_first_name)
-    last_name = fields.String(validate=validate_last_name)
+    first_name = fields.String(validate=Length(1, 50))
+    last_name = fields.String(validate=Length(1, 50))
     email = fields.Email()
     enabled = fields.Boolean()

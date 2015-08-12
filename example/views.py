@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from flask import Flask
-from flask_io import FlaskIO, Error, fields
+from flask_io import FlaskIO, fields
 from datetime import datetime
 from example.schemas import UserSchema, PatchUserSchema, UpdateUserSchema
 
