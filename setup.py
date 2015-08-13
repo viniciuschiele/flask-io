@@ -2,13 +2,13 @@ from setuptools import setup
 
 setup(
     name='flask-io',
-    version='0.7.0',
+    version='0.9.0',
     packages=['flask_io'],
     url='https://github.com/viniciuschiele/flask-io',
     license='Apache 2.0',
     author='Vinicius Chiele',
     author_email='vinicius.chiele@gmail.com',
-    description='Flask IO is a library for Python 3+ which make easier to parse request arguments and return responses.',
+    description='Flask IO is a library for Python 3+ which make easier to parse request arguments and serialize responses.',
     keywords=['flask', 'rest', 'parse', 'encode', 'decode', 'request', 'json'],
     install_requires=['flask>=0.10.1', 'python-dateutil>=2.4.2', 'marshmallow==2.0.0b5'],
     classifiers=[
