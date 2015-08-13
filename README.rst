@@ -1,11 +1,11 @@
 =================================
 Flask IO
 =================================
-Flask IO is a library for Python 3+ which make easier to parse request arguments and return responses.
+Flask IO is a library for Python 3+ which make easier to parse request arguments and serialize responses.
 
 Documentation
 ===============
-Soon... take a look at the examples_ to see how it works.
+Soon... take a look at the example_ to see how it works.
 
 Installation
 ===============
@@ -26,7 +26,7 @@ Please use the Issues_ for feature requests and troubleshooting usage.
 .. |License| image:: https://pypip.in/license/flask-io/badge.svg?
    :target: https://github.com/viniciuschiele/flask-io/blob/master/LICENSE
 
-.. _examples: https://github.com/viniciuschiele/flask-io/tree/master/examples
+.. _example: https://github.com/viniciuschiele/flask-io/tree/master/example
 
 .. _PyPi: https://pypi.python.org/pypi/flask-io
 
