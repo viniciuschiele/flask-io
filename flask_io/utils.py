@@ -63,6 +63,14 @@ def http_status_message(code):
     return HTTP_STATUS_CODES.get(code, '')
 
 
+def marshal(data, schema, envelope=None):
+    many = isinstance(data, list)
+    data = schema.dump(data, many=many).data
+    if envelope:
+        return {envelope: data}
+    return data
+
+
 def unpack(value):
     data, status, headers = value + (None,) * (3 - len(value))
     return data, status, headers

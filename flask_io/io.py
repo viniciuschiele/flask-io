@@ -21,7 +21,7 @@ from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptabl
 from .encoders import register_default_decoders, register_default_encoders
 from .errors import ErrorResult, ErrorResultSchema
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params
-from .utils import convert_validation_errors, http_status_message, unpack
+from .utils import convert_validation_errors, http_status_message, marshal, unpack
 
 
 class FlaskIO(object):
@@ -55,26 +55,26 @@ class FlaskIO(object):
         self.__app.handle_user_exception = partial(self.__error_router, app.handle_user_exception)
 
     def bad_request(self, errors):
-        error = self.__marshal(ErrorResult(400, errors), ErrorResultSchema())
+        error = marshal(ErrorResult(400, errors), ErrorResultSchema())
         return self.make_response((error, 400))
 
     def conflict(self, errors):
-        error = self.__marshal(ErrorResult(409, errors), ErrorResultSchema())
+        error = marshal(ErrorResult(409, errors), ErrorResultSchema())
         return self.make_response((error, 409))
 
     def no_content(self):
         return self.make_response(None)
 
     def not_found(self, errors):
-        error = self.__marshal(ErrorResult(404, errors), ErrorResultSchema())
+        error = marshal(ErrorResult(404, errors), ErrorResultSchema())
         return self.make_response((error, 404))
 
     def ok(self, data, schema=None, envelope=None):
-        data = self.__marshal(data, schema, envelope)
+        data = marshal(data, schema, envelope)
         return self.make_response(data)
 
     def unauthorized(self, errors):
-        error = self.__marshal(ErrorResult(401, errors), ErrorResultSchema())
+        error = marshal(ErrorResult(401, errors), ErrorResultSchema())
         return self.make_response((error, 401))
 
     def from_body(self, param_name, schema=None):
@@ -190,13 +190,6 @@ class FlaskIO(object):
 
         return schema
 
-    def __marshal(self, data, schema, envelope=None):
-        many = isinstance(data, list)
-        data = schema.dump(data, many=many).data
-        if envelope:
-            return {envelope: data}
-        return data
-
     def __process_func(self, func):
         def decorator(**kwargs):
             func_name = get_func_name(func)
@@ -218,7 +211,7 @@ class FlaskIO(object):
             if resp and not isinstance(resp, self.__app.response_class):
                 schema, envelope = self.__marshal_by_func.get(get_func_name(func)) or (None, None)
                 if schema:
-                    resp = self.__marshal(resp, schema, envelope)
+                    resp = marshal(resp, schema, envelope)
 
             return self.make_response(resp)
         return decorator
@@ -264,6 +257,6 @@ class FlaskIO(object):
             else:
                 message = http_status_message(code)
 
-        error = self.__marshal(ErrorResult(code, message), ErrorResultSchema())
+        error = marshal(ErrorResult(code, message), ErrorResultSchema())
 
         return self.make_response((error, code))
