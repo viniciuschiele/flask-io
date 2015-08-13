@@ -14,7 +14,7 @@
 
 from flask import Flask
 from flask_io import FlaskIO
-from flask_io import fields
+from marshmallow import fields
 from unittest import TestCase
 
 

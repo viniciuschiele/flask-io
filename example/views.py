@@ -13,8 +13,9 @@
 # limitations under the License.
 
 from flask import Flask
-from flask_io import FlaskIO, fields
+from flask_io import FlaskIO
 from datetime import datetime
+from marshmallow import fields
 from example.schemas import UserSchema, PatchUserSchema, UpdateUserSchema
 
 app = Flask(__name__)

@@ -15,9 +15,9 @@
 from flask import request
 from functools import partial
 from inspect import isclass
+from marshmallow import fields, Schema
 from uuid import uuid4
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
-from . import fields, Schema
 from .encoders import register_default_decoders, register_default_encoders
 from .errors import ErrorResult, ErrorResultSchema
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params

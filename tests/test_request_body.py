@@ -15,8 +15,8 @@
 import json
 
 from flask import Flask
-from flask_io import FlaskIO, fields
-from marshmallow import Schema
+from flask_io import FlaskIO
+from marshmallow import fields, Schema
 from unittest import TestCase
 
 
