@@ -14,13 +14,14 @@
 
 from flask import request
 from functools import partial
+from inspect import isclass
 from uuid import uuid4
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from . import fields, Schema
 from .encoders import register_default_decoders, register_default_encoders
-from .internal import ErrorResult, ErrorResultSchema
-from .utils import get_best_match_for_content_type, get_func_name, new_if_isclass, unpack
-from .utils import convert_marshmallow_errors, http_status_message
+from .errors import ErrorResult, ErrorResultSchema
+from .utils import get_best_match_for_content_type, get_func_name, get_request_params
+from .utils import convert_validation_errors, http_status_message, unpack
 
 
 class FlaskIO(object):
@@ -34,11 +35,11 @@ class FlaskIO(object):
         self.__params_by_func = {}
         self.__schemas_by_func = {}
         self.__sources = {
-            'body': lambda n, m: self.__decode_body(),
-            'cookie': lambda n, m: self.__parse_request(request.cookies, n, m),
-            'form': lambda n, m: self.__parse_request(request.form, n, m),
-            'header': lambda n, m: self.__parse_request(request.headers, n, m),
-            'query': lambda n, m: self.__parse_request(request.args, n, m)
+            'body': lambda n, m: self.__decode_data(request.data),
+            'cookie': lambda n, m: get_request_params(request.cookies, n, m),
+            'form': lambda n, m: get_request_params(request.form, n, m),
+            'header': lambda n, m: get_request_params(request.headers, n, m),
+            'query': lambda n, m: get_request_params(request.args, n, m)
         }
 
         register_default_decoders(self)
@@ -77,7 +78,7 @@ class FlaskIO(object):
         return self.make_response((error, 401))
 
     def from_body(self, param_name, schema=None):
-        schema = new_if_isclass(schema)
+        schema = schema() if isclass(schema) else schema
 
         def wrapper(func):
             self.__register_parameter(func, param_name, schema, 'body')
@@ -109,7 +110,7 @@ class FlaskIO(object):
         return wrapper
 
     def marshal_with(self, schema, envelope=None):
-        schema = new_if_isclass(schema)
+        schema = schema() if isclass(schema) else schema
 
         def wrapper(func):
             self.__register_marshal(func, schema, envelope)
@@ -154,8 +155,7 @@ class FlaskIO(object):
             self.default_encoder = media_type
         self.__encoders[media_type] = func
 
-    def __decode_body(self):
-        data = request.data
+    def __decode_data(self, data):
         if not data:
             return None
 
@@ -167,6 +167,15 @@ class FlaskIO(object):
         decoder = self.__decoders.get(mimetype)
 
         return decoder(data)
+
+    def __get_param_values(self, params):
+        data = {}
+        for param_name, field_or_schema, location in params:
+            multiple = isinstance(field_or_schema, fields.List)
+            value = self.__sources[location](param_name, multiple)
+            if value is not None and value != '':
+                data[param_name] = value
+        return data
 
     def __get_schema_by_func(self, func_name, params):
         schema = self.__schemas_by_func.get(func_name)
@@ -196,11 +205,11 @@ class FlaskIO(object):
 
             if params:
                 schema = self.__get_schema_by_func(func_name, params)
-                values = self.__retrieve_param_values(params)
+                values = self.__get_param_values(params)
                 data, errors = schema.load(values)
 
                 if errors:
-                    return self.bad_request(convert_marshmallow_errors(errors))
+                    return self.bad_request(convert_validation_errors(errors, params))
 
                 kwargs.update(data)
 
@@ -213,15 +222,6 @@ class FlaskIO(object):
 
             return self.make_response(resp)
         return decorator
-
-    def __retrieve_param_values(self, params):
-        data = {}
-        for param_name, field_or_schema, location in params:
-            multiple = isinstance(field_or_schema, fields.List)
-            value = self.__sources[location](param_name, multiple)
-            if value is not None and value != '':
-                data[param_name] = value
-        return data
 
     def __register_parameter(self, func, param_name, field_or_schema, location):
         field_or_schema = field_or_schema or fields.Raw()
@@ -246,15 +246,10 @@ class FlaskIO(object):
         for key in self.__app.view_functions.keys():
             self.__app.view_functions[key] = self.__process_func(self.__app.view_functions[key])
 
-    def __parse_request(self, data, name, multiple):
-        if multiple:
-            return data.getlist(name)
-        return data.get(name)
-
     def __error_router(self, original_handler, e):
         try:
             return original_handler(e)
-        except Exception:
+        except:
             return self.__handle_error(e)
 
     def __handle_error(self, e):
@@ -263,7 +258,11 @@ class FlaskIO(object):
             message = getattr(e, 'description', http_status_message(code))
         else:
             code = 500
-            message = http_status_message(code)
+
+            if self.__app.config.get('DEBUG'):
+                message = str(e)
+            else:
+                message = http_status_message(code)
 
         error = self.__marshal(ErrorResult(code, message), ErrorResultSchema())
 

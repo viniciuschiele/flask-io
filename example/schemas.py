@@ -18,7 +18,7 @@ from .models import User
 
 
 class UserSchema(Schema):
-    username = fields.String(required=True, validate=Length(8, 30))
+    username = fields.String(required=True, validate=Length(5, 30))
     first_name = fields.String(required=True, validate=Length(1, 50))
     last_name = fields.String(required=True, validate=Length(1, 50))
     email = fields.Email(required=True)

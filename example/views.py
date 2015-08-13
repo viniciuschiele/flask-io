@@ -18,6 +18,7 @@ from datetime import datetime
 from example.schemas import UserSchema, PatchUserSchema, UpdateUserSchema
 
 app = Flask(__name__)
+app.config['DEBUG'] = True
 
 io = FlaskIO()
 io.init_app(app)
