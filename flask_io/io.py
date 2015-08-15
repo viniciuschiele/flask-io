@@ -16,6 +16,7 @@ from flask import request
 from functools import partial
 from inspect import isclass
 from marshmallow import fields, Schema
+from marshmallow.utils import missing
 from uuid import uuid4
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from .encoders import register_default_decoders, register_default_encoders
@@ -224,10 +225,15 @@ class FlaskIO(object):
         if params is None:
             params = self.__params_by_func[func_name] = []
 
-        if isinstance(field_or_schema, fields.Field) and field_or_schema.attribute:
-            old_param_name = param_name
-            param_name = field_or_schema.attribute
-            field_or_schema.attribute = old_param_name
+        if isinstance(field_or_schema, fields.Field):
+            field_or_schema.allow_none = True
+            if field_or_schema.missing == missing:
+                field_or_schema.missing = None
+
+            if field_or_schema.attribute:
+                old_param_name = param_name
+                param_name = field_or_schema.attribute
+                field_or_schema.attribute = old_param_name
 
         params.append((param_name, field_or_schema, location))
 
