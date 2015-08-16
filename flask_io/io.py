@@ -15,10 +15,9 @@
 from flask import request
 from functools import partial
 from inspect import isclass
-from marshmallow import fields, Schema
-from marshmallow.utils import missing
-from uuid import uuid4
+from marshmallow import fields
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
+from .actions import ActionContext
 from .encoders import register_default_decoders, register_default_encoders
 from .errors import ErrorResult, ErrorResultSchema
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params
@@ -30,11 +29,9 @@ class FlaskIO(object):
 
     def __init__(self, app=None):
         self.__app = None
+        self.__actions = {}
         self.__decoders = {}
         self.__encoders = {}
-        self.__marshal_by_func = {}
-        self.__params_by_func = {}
-        self.__schemas_by_func = {}
         self.__sources = {
             'body': lambda n, m: self.__decode_data(request.data),
             'cookie': lambda n, m: get_request_params(request.cookies, n, m),
@@ -51,7 +48,7 @@ class FlaskIO(object):
 
     def init_app(self, app):
         self.__app = app
-        self.__app.before_first_request(self.__register_views)
+        self.__app.before_first_request(self.__wrap_views)
         self.__app.handle_exception = partial(self.__error_router, app.handle_exception)
         self.__app.handle_user_exception = partial(self.__error_router, app.handle_user_exception)
 
@@ -82,31 +79,31 @@ class FlaskIO(object):
         schema = schema() if isclass(schema) else schema
 
         def wrapper(func):
-            self.__register_parameter(func, param_name, schema, 'body')
+            self.__get_action(func).add_parameter(param_name, schema, 'body')
             return func
         return wrapper
 
     def from_cookie(self, param_name, field):
         def wrapper(func):
-            self.__register_parameter(func, param_name, field, 'cookie')
+            self.__get_action(func).add_parameter(param_name, field, 'cookie')
             return func
         return wrapper
 
     def from_form(self, param_name, field):
         def wrapper(func):
-            self.__register_parameter(func, param_name, field, 'form')
+            self.__get_action(func).add_parameter(param_name, field, 'form')
             return func
         return wrapper
 
     def from_header(self, param_name, field):
         def wrapper(func):
-            self.__register_parameter(func, param_name, field, 'header')
+            self.__get_action(func).add_parameter(param_name, field, 'header')
             return func
         return wrapper
 
     def from_query(self, param_name, field=None):
         def wrapper(func):
-            self.__register_parameter(func, param_name, field, 'query')
+            self.__get_action(func).add_parameter(param_name, field, 'query')
             return func
         return wrapper
 
@@ -114,7 +111,9 @@ class FlaskIO(object):
         schema = schema() if isclass(schema) else schema
 
         def wrapper(func):
-            self.__register_marshal(func, schema, envelope)
+            action = self.__get_action(func)
+            action.output_schema = schema
+            action.output_envelope = envelope
             return func
         return wrapper
 
@@ -169,6 +168,16 @@ class FlaskIO(object):
 
         return decoder(data)
 
+    def __get_action(self, func):
+        func_name = get_func_name(func)
+
+        action = self.__actions.get(func_name)
+
+        if not action:
+            action = self.__actions[func_name] = ActionContext()
+
+        return action
+
     def __get_param_values(self, params):
         data = {}
         for param_name, field_or_schema, location in params:
@@ -178,72 +187,31 @@ class FlaskIO(object):
                 data[param_name] = value
         return data
 
-    def __get_schema_by_func(self, func_name, params):
-        schema = self.__schemas_by_func.get(func_name)
-
-        if not schema:
-            attrs = {}
-            for param_name, field_or_schema, _ in params:
-                if isinstance(field_or_schema, Schema):
-                    field_or_schema = fields.Nested(field_or_schema, required=True)
-                attrs[param_name] = field_or_schema
-            schema = self.__schemas_by_func[func_name] = type('IOSchema' + str(uuid4()), (Schema,), attrs)()
-
-        return schema
-
-    def __process_func(self, func):
+    def __process_action(self, func):
         def decorator(**kwargs):
-            func_name = get_func_name(func)
+            action = self.__get_action(func)
 
-            params = self.__params_by_func.get(func_name)
-
-            if params:
-                schema = self.__get_schema_by_func(func_name, params)
-                values = self.__get_param_values(params)
-                data, errors = schema.load(values)
+            if action.params:
+                values = self.__get_param_values(action.params)
+                data, errors = action.input_schema.load(values)
 
                 if errors:
-                    return self.bad_request(convert_validation_errors(errors, params))
+                    return self.bad_request(convert_validation_errors(errors, action.params))
 
                 kwargs.update(data)
 
             resp = func(**kwargs)
 
             if resp and not isinstance(resp, self.__app.response_class):
-                schema, envelope = self.__marshal_by_func.get(get_func_name(func)) or (None, None)
-                if schema:
-                    resp = marshal(resp, schema, envelope)
+                if action.output_schema:
+                    resp = marshal(resp, action.output_schema, action.output_envelope)
 
             return self.make_response(resp)
         return decorator
 
-    def __register_parameter(self, func, param_name, field_or_schema, location):
-        field_or_schema = field_or_schema or fields.Raw()
-        func_name = get_func_name(func)
-
-        params = self.__params_by_func.get(func_name)
-        if params is None:
-            params = self.__params_by_func[func_name] = []
-
-        if isinstance(field_or_schema, fields.Field):
-            field_or_schema.allow_none = True
-            if field_or_schema.missing == missing:
-                field_or_schema.missing = None
-
-            if field_or_schema.attribute:
-                old_param_name = param_name
-                param_name = field_or_schema.attribute
-                field_or_schema.attribute = old_param_name
-
-        params.append((param_name, field_or_schema, location))
-
-    def __register_marshal(self, func, schema, envelope):
-        func_name = get_func_name(func)
-        self.__marshal_by_func[func_name] = (schema, envelope)
-
-    def __register_views(self):
+    def __wrap_views(self):
         for key in self.__app.view_functions.keys():
-            self.__app.view_functions[key] = self.__process_func(self.__app.view_functions[key])
+            self.__app.view_functions[key] = self.__process_action(self.__app.view_functions[key])
 
     def __error_router(self, original_handler, e):
         try:

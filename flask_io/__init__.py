@@ -12,7 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from marshmallow import Schema
-from marshmallow import ValidationError
 from .io import FlaskIO
 from .errors import Error
