@@ -12,26 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
 from flask import request
 from functools import partial
 from inspect import isclass
 from marshmallow import fields
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from .actions import ActionContext
-from .encoders import register_default_decoders, register_default_encoders
+from .encoders import json_decode, json_encode
 from .errors import ErrorResult, ErrorResultSchema
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params
 from .utils import convert_validation_errors, http_status_message, marshal, unpack
 
 
 class FlaskIO(object):
-    default_encoder = None
+    default_encoder = 'application/json'
 
     def __init__(self, app=None):
         self.__app = None
         self.__actions = {}
-        self.__decoders = {}
-        self.__encoders = {}
         self.__sources = {
             'body': lambda n, m: self.__decode_data(request.data),
             'cookie': lambda n, m: get_request_params(request.cookies, n, m),
@@ -40,8 +39,8 @@ class FlaskIO(object):
             'query': lambda n, m: get_request_params(request.args, n, m)
         }
 
-        register_default_decoders(self)
-        register_default_encoders(self)
+        self.decoders = OrderedDict([('application/json', json_decode)])
+        self.encoders = OrderedDict([('application/json', json_encode)])
 
         if app:
             self.init_app(app)
@@ -123,8 +122,8 @@ class FlaskIO(object):
             data, status, headers = unpack(data)
 
         if not isinstance(data, self.__app.response_class):
-            media_type = request.accept_mimetypes.best_match(self.__encoders, default=self.default_encoder)
-            encoder = self.__encoders.get(media_type)
+            media_type = request.accept_mimetypes.best_match(self.encoders, default=self.default_encoder)
+            encoder = self.encoders.get(media_type)
 
             if encoder is None:
                 raise InternalServerError()
@@ -147,24 +146,28 @@ class FlaskIO(object):
 
         return data
 
-    def register_decoder(self, media_type, func):
-        self.__decoders[media_type] = func
+    def decoder(self, media_type):
+        def wrapper(func):
+            self.decoders[media_type] = func
+            return func
+        return wrapper
 
-    def register_encoder(self, media_type, func):
-        if not self.default_encoder:
-            self.default_encoder = media_type
-        self.__encoders[media_type] = func
+    def encoder(self, media_type):
+        def wrapper(func):
+            self.encoders[media_type] = func
+            return func
+        return wrapper
 
     def __decode_data(self, data):
         if not data:
             return None
 
-        mimetype = get_best_match_for_content_type(self.__decoders)
+        mimetype = get_best_match_for_content_type(self.decoders)
 
         if not mimetype:
             raise NotAcceptable()
 
-        decoder = self.__decoders.get(mimetype)
+        decoder = self.decoders.get(mimetype)
 
         return decoder(data)
 
