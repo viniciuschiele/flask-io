@@ -12,21 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import sys
+
 from collections import OrderedDict
 from flask import request
-from functools import partial
 from inspect import isclass
 from marshmallow import fields
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from .actions import ActionContext
 from .encoders import json_decode, json_encode
 from .errors import ErrorResult, ErrorResultSchema
+from .time import Stopwatch
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params
 from .utils import convert_validation_errors, http_status_message, marshal, unpack
 
 
 class FlaskIO(object):
     default_encoder = 'application/json'
+    trace_enabled = True
 
     def __init__(self, app=None):
         self.__app = None
@@ -39,8 +43,13 @@ class FlaskIO(object):
             'query': lambda n, m: get_request_params(request.args, n, m)
         }
 
+        self.__trace_data_handler = None
+        self.__trace_output_handler = None
+
         self.decoders = OrderedDict([('application/json', json_decode)])
         self.encoders = OrderedDict([('application/json', json_encode)])
+
+        self.logger = logging.getLogger('flask-io')
 
         if app:
             self.init_app(app)
@@ -48,8 +57,8 @@ class FlaskIO(object):
     def init_app(self, app):
         self.__app = app
         self.__app.before_first_request(self.__wrap_views)
-        self.__app.handle_exception = partial(self.__error_router, app.handle_exception)
-        self.__app.handle_user_exception = partial(self.__error_router, app.handle_user_exception)
+
+        self.trace_enabled = self.__app.config.get('TRACE_ENABLED', FlaskIO.trace_enabled)
 
     def bad_request(self, errors):
         error = marshal(ErrorResult(400, errors), ErrorResultSchema())
@@ -158,6 +167,25 @@ class FlaskIO(object):
             return func
         return wrapper
 
+    def trace(self):
+        def wrapper(func):
+            action = self.__get_action(func)
+            action.trace_enabled = True
+            return func
+        return wrapper
+
+    def trace_data_handler(self):
+        def decorator(f):
+            self.__trace_data_handler = f
+            return f
+        return decorator
+
+    def trace_output_handler(self):
+        def decorator(f):
+            self.__trace_output_handler = f
+            return f
+        return decorator
+
     def __decode_data(self, data):
         if not data:
             return None
@@ -192,35 +220,42 @@ class FlaskIO(object):
 
     def __process_action(self, func):
         def decorator(**kwargs):
+            latency_total = Stopwatch.start_new()
+            latency_func = Stopwatch()
+
             action = self.__get_action(func)
 
-            if action.params:
-                values = self.__get_param_values(action.params)
-                data, errors = action.input_schema.load(values)
+            try:
+                if action.params:
+                    values = self.__get_param_values(action.params)
+                    data, errors = action.input_schema.load(values)
 
-                if errors:
-                    return self.bad_request(convert_validation_errors(errors, action.params))
+                    if errors:
+                        return self.bad_request(convert_validation_errors(errors, action.params))
 
-                kwargs.update(data)
+                    kwargs.update(data)
 
-            resp = func(**kwargs)
+                latency_func.start()
+                resp = func(**kwargs)
+                latency_func.stop()
 
-            if not isinstance(resp, self.__app.response_class):
-                if action.output_schema:
-                    resp = marshal(resp, action.output_schema, action.output_envelope)
+                if not isinstance(resp, self.__app.response_class):
+                    if action.output_schema:
+                        resp = marshal(resp, action.output_schema, action.output_envelope)
 
-            return self.make_response(resp)
+                return self.make_response(resp)
+            except Exception as e:
+                return self.__handle_error(e)
+            finally:
+                if self.trace_enabled and action.trace_enabled:
+                    latency_total.stop()
+                    latency_func.stop()
+                    self.__perform_trace(get_func_name(func), latency_total.elapsed, latency_func.elapsed)
         return decorator
 
     def __wrap_views(self):
         for key in self.__app.view_functions.keys():
             self.__app.view_functions[key] = self.__process_action(self.__app.view_functions[key])
-
-    def __error_router(self, original_handler, e):
-        try:
-            return original_handler(e)
-        except:
-            return self.__handle_error(e)
 
     def __handle_error(self, e):
         if isinstance(e, HTTPException):
@@ -237,3 +272,32 @@ class FlaskIO(object):
         error = marshal(ErrorResult(code, message), ErrorResultSchema())
 
         return self.make_response((error, code))
+
+    def __perform_trace(self, func_name, latency_total, latency_func):
+        error = sys.exc_info()[0]
+
+        data = OrderedDict()
+        data['func'] = func_name
+        if error:
+            data['error'] = str(error)
+        data['latency_total'] = '%.5f' % latency_total
+        data['latency_func'] = '%.5f' % latency_func
+        data['http_method'] = request.environ['REQUEST_METHOD']
+        data['url'] = request.url
+
+        body = request.get_data(as_text=True)
+        if body:
+            data['body'] = body
+
+        if self.__trace_data_handler:
+            self.__trace_data_handler(data)
+
+        if self.__trace_output_handler:
+            self.__trace_output_handler(data)
+        else:
+            message = ''
+
+            for key, value in data.items():
+                message += key + ': ' + str(value) + '\r\n'
+
+            self.logger.info(message)
