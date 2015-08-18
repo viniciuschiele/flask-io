@@ -40,7 +40,7 @@ def add_user(user):
 
 
 @app.route('/users')
-@io.from_query('username', fields.String(missing=''))
+@io.from_query('username', fields.String())
 @io.from_query('max_results', fields.Integer(missing=10))
 @io.marshal_with(UserSchema)
 def get_users(username, max_results):
