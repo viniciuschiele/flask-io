@@ -205,7 +205,7 @@ class FlaskIO(object):
 
             resp = func(**kwargs)
 
-            if resp and not isinstance(resp, self.__app.response_class):
+            if not isinstance(resp, self.__app.response_class):
                 if action.output_schema:
                     resp = marshal(resp, action.output_schema, action.output_envelope)
 

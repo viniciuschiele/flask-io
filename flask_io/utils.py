@@ -64,10 +64,13 @@ def http_status_message(code):
 
 
 def marshal(data, schema, envelope=None):
-    many = isinstance(data, list)
-    data = schema.dump(data, many=many).data
+    if data is not None:
+        many = isinstance(data, list)
+        data = schema.dump(data, many=many).data
+
     if envelope:
         return {envelope: data}
+
     return data
 
 
