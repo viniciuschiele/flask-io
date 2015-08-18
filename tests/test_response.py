@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 from flask import Flask
 from flask_io import FlaskIO
 from flask_io.errors import Error
+from marshmallow import fields, Schema
 from unittest import TestCase
 
 
@@ -32,3 +35,31 @@ class TestResponseStatus(TestCase):
 
         response = self.client.post('/resource')
         self.assertEqual(response.status_code, 401)
+
+    def test_none_with_envelope(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.marshal_with(UserSchema, envelope='users')
+        def test():
+            return None
+
+        response = self.client.post('/resource')
+
+        data = json.loads(response.get_data(as_text=True))
+
+        self.assertEqual(data.get('users', 'missing'), None)
+
+    def test_empty_list_with_envelope(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.marshal_with(UserSchema, envelope='users')
+        def test():
+            return []
+
+        response = self.client.post('/resource')
+
+        data = json.loads(response.get_data(as_text=True))
+
+        self.assertEqual(data.get('users'), [])
+
+
+class UserSchema(Schema):
+    username = fields.String()
