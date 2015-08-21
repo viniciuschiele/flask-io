@@ -21,6 +21,7 @@ class TestTrace(TestCase):
     def setUp(self):
         self.app = Flask(__name__)
         self.io = FlaskIO()
+        self.io.trace_enabled = True
         self.io.init_app(self.app)
         self.client = self.app.test_client()
 

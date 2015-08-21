@@ -58,7 +58,7 @@ class FlaskIO(object):
         self.__app = app
         self.__app.before_first_request(self.__wrap_views)
 
-        self.trace_enabled = self.__app.config.get('TRACE_ENABLED', FlaskIO.trace_enabled)
+        self.trace_enabled = self.__app.config.get('TRACE_ENABLED', self.trace_enabled)
 
     def bad_request(self, errors):
         error = marshal(ErrorResult(400, errors), ErrorResultSchema())
