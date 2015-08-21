@@ -68,6 +68,19 @@ class TestRequestBody(TestCase):
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
         self.assertEqual(response.status_code, 400)
 
+    def test_empty_content_type(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.from_body('user', UserSchema)
+        def test(user):
+            self.assertEqual(type(user), User)
+            self.assertEqual(user.username, 'user1')
+            self.assertEqual(user.password, 'pass1')
+
+        data = UserSchema().dump(User('user1', 'pass1')).data
+
+        response = self.client.post('/resource', data=json.dumps(data))
+        self.assertEqual(response.status_code, 204)
+
 
 class User(object):
     def __init__(self, username, password):
