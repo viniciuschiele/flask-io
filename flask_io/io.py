@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-import sys
 
 from collections import OrderedDict
 from flask import request
@@ -25,7 +24,7 @@ from .encoders import json_decode, json_encode
 from .errors import ErrorResult, ErrorResultSchema
 from .time import Stopwatch
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params
-from .utils import convert_validation_errors, http_status_message, marshal, unpack
+from .utils import collect_trace_data, convert_validation_errors, http_status_message, marshal, unpack
 
 
 class FlaskIO(object):
@@ -44,7 +43,7 @@ class FlaskIO(object):
         }
 
         self.__trace_data_handler = None
-        self.__trace_output_handler = None
+        self.__trace_output_handler = self.__write_trace_data
 
         self.decoders = OrderedDict([('application/json', json_decode)])
         self.encoders = OrderedDict([('application/json', json_encode)])
@@ -205,7 +204,7 @@ class FlaskIO(object):
         action = self.__actions.get(func_name)
 
         if not action:
-            action = self.__actions[func_name] = ActionContext()
+            action = self.__actions[func_name] = ActionContext(func_name)
 
         return action
 
@@ -219,11 +218,12 @@ class FlaskIO(object):
         return data
 
     def __process_action(self, func):
+        action = self.__get_action(func)
+
         def decorator(**kwargs):
             latency_total = Stopwatch.start_new()
             latency_func = Stopwatch()
-
-            action = self.__get_action(func)
+            response = error = None
 
             try:
                 if action.params:
@@ -235,22 +235,29 @@ class FlaskIO(object):
 
                     kwargs.update(data)
 
-                latency_func.start()
-                resp = func(**kwargs)
-                latency_func.stop()
+                try:
+                    latency_func.start()
+                    ret = func(**kwargs)
+                finally:
+                    latency_func.stop()
 
-                if not isinstance(resp, self.__app.response_class):
+                if not isinstance(ret, self.__app.response_class):
                     if action.output_schema:
-                        resp = marshal(resp, action.output_schema, action.output_envelope)
+                        ret = marshal(ret, action.output_schema, action.output_envelope)
 
-                return self.make_response(resp)
+                response = self.make_response(ret)
+                return response
             except Exception as e:
+                error = e
                 return self.__handle_error(e)
             finally:
-                if self.trace_enabled and action.trace_enabled:
+                if action.trace_enabled and self.trace_enabled:
                     latency_total.stop()
-                    latency_func.stop()
-                    self.__perform_trace(get_func_name(func), latency_total.elapsed, latency_func.elapsed)
+                    data = collect_trace_data(action, latency_total, latency_func, error, response)
+                    if self.__trace_data_handler:
+                        self.__trace_data_handler(data)
+                    self.__trace_output_handler(data)
+
         return decorator
 
     def __wrap_views(self):
@@ -273,31 +280,10 @@ class FlaskIO(object):
 
         return self.make_response((error, code))
 
-    def __perform_trace(self, func_name, latency_total, latency_func):
-        error = sys.exc_info()[0]
+    def __write_trace_data(self, data):
+        message = ''
 
-        data = OrderedDict()
-        data['func'] = func_name
-        if error:
-            data['error'] = str(error)
-        data['latency_total'] = '%.5f' % latency_total
-        data['latency_func'] = '%.5f' % latency_func
-        data['http_method'] = request.environ['REQUEST_METHOD']
-        data['url'] = request.url
+        for key, value in data.items():
+            message += key + ': ' + str(value) + '\r\n'
 
-        body = request.get_data(as_text=True)
-        if body:
-            data['body'] = body
-
-        if self.__trace_data_handler:
-            self.__trace_data_handler(data)
-
-        if self.__trace_output_handler:
-            self.__trace_output_handler(data)
-        else:
-            message = ''
-
-            for key, value in data.items():
-                message += key + ': ' + str(value) + '\r\n'
-
-            self.logger.info(message)
+        self.logger.info(message)

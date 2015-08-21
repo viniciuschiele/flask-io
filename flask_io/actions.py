@@ -18,7 +18,8 @@ from uuid import uuid4
 
 
 class ActionContext(object):
-    def __init__(self):
+    def __init__(self, func_name):
+        self.func_name = func_name
         self.params = []
         self.__input_schema = None
         self.output_schema = None
