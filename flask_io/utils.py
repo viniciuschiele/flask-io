@@ -59,8 +59,11 @@ def convert_validation_error(field, error, location, items):
             items.append(Error(error.get('message'), error.get('reason'), location, field))
 
 
-def get_best_match_for_content_type(mimetypes):
+def get_best_match_for_content_type(mimetypes, default=None):
     content_type = request.headers['content-type']
+
+    if not content_type:
+        return default
 
     mimetype_expected = content_type.split(';')[0].lower()
     for mimetype in mimetypes:

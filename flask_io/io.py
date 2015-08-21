@@ -28,6 +28,7 @@ from .utils import collect_trace_data, convert_validation_errors, http_status_me
 
 
 class FlaskIO(object):
+    default_decoder = 'application/json'
     default_encoder = 'application/json'
     trace_enabled = False
 
@@ -189,7 +190,7 @@ class FlaskIO(object):
         if not data:
             return None
 
-        mimetype = get_best_match_for_content_type(self.decoders)
+        mimetype = get_best_match_for_content_type(self.decoders, self.default_decoder)
 
         if not mimetype:
             raise NotAcceptable()
