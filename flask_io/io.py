@@ -29,7 +29,7 @@ from .utils import collect_trace_data, convert_validation_errors, http_status_me
 
 class FlaskIO(object):
     default_encoder = 'application/json'
-    trace_enabled = True
+    trace_enabled = False
 
     def __init__(self, app=None):
         self.__app = None
