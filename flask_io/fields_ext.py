@@ -16,7 +16,7 @@ from marshmallow import fields, validate
 
 
 class Enum(fields.Field):
-    """A field that provides a set of enumerated values which an attribute must be contrained to."""
+    """A field that provides a set of enumerated values which an attribute must be constrained to."""
 
     def __init__(self, enum, *args, **kwargs):
         super().__init__(*args, **kwargs)

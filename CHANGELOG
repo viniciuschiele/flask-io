@@ -1,1 +1,5 @@
 # Changelog
+
+### Version 1.1.0
+ - Added Enum field which accept python Enum object.
+ - Changed error message when the content-type is not supported.
