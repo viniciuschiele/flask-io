@@ -193,7 +193,7 @@ class FlaskIO(object):
         mimetype = get_best_match_for_content_type(self.decoders, self.default_decoder)
 
         if not mimetype:
-            raise NotAcceptable()
+            raise NotAcceptable('Content-Type is not supported: ' + request.headers['content-type'])
 
         decoder = self.decoders.get(mimetype)
 
