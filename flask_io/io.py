@@ -280,7 +280,7 @@ class FlaskIO(object):
         error = marshal(ErrorResult(code, message), ErrorResultSchema())
 
         self.logger.error(str(e))
-        
+
         return self.make_response((error, code))
 
     def __write_trace_data(self, data):
