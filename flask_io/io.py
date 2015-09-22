@@ -130,20 +130,16 @@ class FlaskIO(object):
         if isinstance(data, tuple):
             data, status, headers = unpack(data)
 
-        if not isinstance(data, self.__app.response_class):
+        if data is None:
+            data = self.__app.response_class(status=204)
+        elif not isinstance(data, self.__app.response_class):
             media_type = request.accept_mimetypes.best_match(self.encoders, default=self.default_encoder)
             encoder = self.encoders.get(media_type)
 
             if encoder is None:
                 raise InternalServerError()
 
-            if status is None:
-                status = 200 if data is not None else 204
-
-            if data is None:
-                data_bytes = None
-            else:
-                data_bytes = encoder(data)
+            data_bytes = encoder(data)
 
             data = self.__app.response_class(data_bytes, mimetype=media_type)
 
