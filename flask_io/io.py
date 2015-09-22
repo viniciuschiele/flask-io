@@ -273,9 +273,9 @@ class FlaskIO(object):
             else:
                 message = http_status_message(code)
 
-        error = marshal(ErrorResult(code, message), ErrorResultSchema())
+            self.logger.error(str(e))
 
-        self.logger.error(str(e))
+        error = marshal(ErrorResult(code, message), ErrorResultSchema())
 
         return self.make_response((error, code))
 
