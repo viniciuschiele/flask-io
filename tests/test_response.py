@@ -60,6 +60,16 @@ class TestResponseStatus(TestCase):
 
         self.assertEqual(data.get('users'), [])
 
+    def test_no_content(self):
+        @self.app.route('/resource', methods=['POST'])
+        def test():
+            return None
+
+        response = self.client.post('/resource')
+
+        self.assertEqual(response.status_code, 204)
+        self.assertTrue(response.content_type.startswith('text/html'))
+
 
 class UserSchema(Schema):
     username = fields.String()
