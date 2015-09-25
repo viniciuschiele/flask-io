@@ -21,9 +21,8 @@ from marshmallow import fields
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from .actions import ActionContext
 from .encoders import json_decode, json_encode
-from .errors import ErrorResult, ErrorResultSchema
 from .time import Stopwatch
-from .utils import get_best_match_for_content_type, get_func_name, get_request_params
+from .utils import get_best_match_for_content_type, get_func_name, get_request_params, errors_to_dict
 from .utils import collect_trace_data, convert_validation_errors, http_status_message, marshal, unpack
 
 
@@ -61,27 +60,23 @@ class FlaskIO(object):
         self.trace_enabled = self.__app.config.get('TRACE_ENABLED', self.trace_enabled)
 
     def bad_request(self, errors):
-        error = marshal(ErrorResult(400, errors), ErrorResultSchema())
-        return self.make_response((error, 400))
+        return self.make_response((errors_to_dict(errors), 400))
 
     def conflict(self, errors):
-        error = marshal(ErrorResult(409, errors), ErrorResultSchema())
-        return self.make_response((error, 409))
+        return self.make_response((errors_to_dict(errors), 409))
 
     def no_content(self):
         return self.make_response(None)
 
     def not_found(self, errors):
-        error = marshal(ErrorResult(404, errors), ErrorResultSchema())
-        return self.make_response((error, 404))
+        return self.make_response((errors_to_dict(errors), 404))
 
     def ok(self, data, schema=None, envelope=None):
         data = marshal(data, schema, envelope)
         return self.make_response(data)
 
     def unauthorized(self, errors):
-        error = marshal(ErrorResult(401, errors), ErrorResultSchema())
-        return self.make_response((error, 401))
+        return self.make_response((errors_to_dict(errors), 401))
 
     def from_body(self, param_name, schema=None):
         schema = schema() if isclass(schema) else schema
@@ -275,7 +270,7 @@ class FlaskIO(object):
 
             self.logger.error(str(e))
 
-        error = marshal(ErrorResult(code, message), ErrorResultSchema())
+        error = errors_to_dict(message)
 
         return self.make_response((error, code))
 

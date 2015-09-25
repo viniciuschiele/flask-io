@@ -59,6 +59,29 @@ def convert_validation_error(field, error, location, items):
             items.append(Error(error.get('message'), error.get('reason'), location, field))
 
 
+def errors_to_dict(errors):
+    if isinstance(errors, str):
+        errors = [Error(errors)]
+    elif isinstance(errors, list):
+        errors = errors
+    else:
+        errors = [errors]
+
+    errors_data = []
+
+    for error in errors:
+        error_data = {'message': error.message}
+        if error.code:
+            error_data['code'] = error.code
+        if error.location:
+            error_data['location'] = error.location
+        if error.field:
+            error_data['field'] = error.field
+        errors_data.append(error_data)
+
+    return errors_data
+
+
 def get_best_match_for_content_type(mimetypes, default=None):
     content_type = request.headers['content-type']
 
