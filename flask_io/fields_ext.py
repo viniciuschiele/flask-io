@@ -26,10 +26,11 @@ class Enum(fields.Field):
     def _serialize(self, value, attr, obj):
         if type(value) is self.enum:
             return value.value
-        else:
-            return self.enum(value).value
+        return self.enum(value).value
 
-    def _deserialize(self, value):
+    def _deserialize(self, value, attr, data):
+        if type(value) is self.enum:
+            return value
         return self.enum(value)
 
     def _validate(self, value):
