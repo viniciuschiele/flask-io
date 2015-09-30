@@ -18,23 +18,33 @@ from marshmallow import fields, validate
 class Enum(fields.Field):
     """A field that provides a set of enumerated values which an attribute must be constrained to."""
 
-    def __init__(self, enum, *args, **kwargs):
+    def __init__(self, enum_type, member_type=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.enum = enum
-        self.validators.insert(0, validate.OneOf([v.value for v in self.enum]))
+        self.enum_type = enum_type
+
+        if member_type:
+            self.member_type = member_type
+        else:
+            self.member_type = type(list(self.enum_type)[0].value)
+
+        self.validators.insert(0, validate.OneOf([v.value for v in self.enum_type]))
 
     def _serialize(self, value, attr, obj):
-        if type(value) is self.enum:
+        if type(value) is self.enum_type:
             return value.value
-        return self.enum(value).value
+        if type(value) is not self.member_type:
+            value = self.member_type(value)
+        return self.enum_type(value).value
 
     def _deserialize(self, value, attr, data):
-        if type(value) is self.enum:
+        if type(value) is self.enum_type:
             return value
-        return self.enum(value)
+        if type(value) is not self.member_type:
+            value = self.member_type(value)
+        return self.enum_type(value)
 
     def _validate(self, value):
-        if type(value) is self.enum:
+        if type(value) is self.enum_type:
             super()._validate(value.value)
         else:
             super()._validate(value)
