@@ -65,6 +65,9 @@ class FlaskIO(object):
     def conflict(self, errors):
         return self.make_response((errors_to_dict(errors), 409))
 
+    def forbidden(self, errors):
+        return self.make_response((errors_to_dict(errors), 403))
+
     def no_content(self):
         return self.make_response(None)
 
