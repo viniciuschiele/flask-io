@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from marshmallow.validate import ValidationError
-from flask_io.fields_ext import Password
+from flask_io.fields import Password
 from unittest import TestCase
 
 
