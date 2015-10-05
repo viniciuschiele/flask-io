@@ -1,5 +1,11 @@
 # Changelog
 
+### Version 1.4.0
+ - Renamed module fields_ext to fields
+ - Added Complexity validator
+ - Added Password field
+ - Updated Marshmallow to 2.1.0
+ 
 ### Version 1.3.3
  - Added forbidden method to the FlaskIO class.
 
