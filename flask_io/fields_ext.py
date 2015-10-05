@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from marshmallow import fields, validate
+from marshmallow.validate import Length
+from .validate import Complexity
 
 
 class Enum(fields.Field):
@@ -27,7 +29,7 @@ class Enum(fields.Field):
         else:
             self.member_type = type(list(self.enum_type)[0].value)
 
-        self.validators.insert(0, validate.OneOf([v.value for v in self.enum_type]))
+        self.validators.add(validate.OneOf([v.value for v in self.enum_type]))
 
     def _serialize(self, value, attr, obj):
         if type(value) is self.enum_type:
@@ -48,3 +50,11 @@ class Enum(fields.Field):
             super()._validate(value.value)
         else:
             super()._validate(value)
+
+
+class Password(fields.Field):
+    def __init__(self, upper=1, lower=1, letters=1, digits=1, special=1, special_chars=None, min_length=6, max_length=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.validators.append(Length(min_length, max_length))
+        self.validators.append(Complexity(upper, lower, letters, digits, special, special_chars))
