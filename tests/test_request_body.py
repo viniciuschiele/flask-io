@@ -16,7 +16,7 @@ import json
 
 from flask import Flask
 from flask_io import FlaskIO
-from marshmallow import fields, Schema
+from marshmallow import fields, post_load, Schema
 from unittest import TestCase
 
 
@@ -92,5 +92,6 @@ class UserSchema(Schema):
     username = fields.String()
     password = fields.String(validate=lambda n: len(n) >= 5)
 
+    @post_load
     def make_object(self, data):
         return User(**data)
