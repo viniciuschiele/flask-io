@@ -17,34 +17,10 @@ from werkzeug.http import HTTP_STATUS_CODES
 from .errors import Error
 
 
-def convert_validation_errors(errors, params):
-    items = []
-
-    for field, error in errors.items():
-        location = next((x[2] for x in params if x[0] == field), None)
-        convert_validation_error(field, error, location, items)
-
-    return items
-
-
-def convert_validation_error(field, error, location, items):
-    if isinstance(error, dict):
-        for f, e in error.items():
-            convert_validation_error(f, e, location, items)
-    elif isinstance(error, list):
-        error = error[0]
-        if isinstance(error, str):
-            items.append(Error(error, location=location, field=field))
-        elif isinstance(error, dict):
-            items.append(Error(error.get('message'), error.get('reason'), location, field))
-
-
 def errors_to_dict(errors):
     if isinstance(errors, str):
         errors = [Error(errors)]
-    elif isinstance(errors, list):
-        errors = errors
-    else:
+    elif not isinstance(errors, list):
         errors = [errors]
 
     errors_data = []
@@ -75,16 +51,6 @@ def get_best_match_for_content_type(mimetypes, default=None):
     return None
 
 
-def get_func_name(func):
-    return func.__module__ + "." + func.__name__
-
-
-def get_request_params(data, name, multiple):
-    if multiple:
-        return data.getlist(name)
-    return data.get(name)
-
-
 def http_status_message(code):
     return HTTP_STATUS_CODES.get(code, '')
 
@@ -103,3 +69,24 @@ def marshal(data, schema, envelope=None):
 def unpack(value):
     data, status, headers = value + (None,) * (3 - len(value))
     return data, status, headers
+
+
+def validation_error_to_errors(validation_error):
+    errors = []
+
+    for field, error in validation_error.messages.items():
+        validation_error_to_error(field, error, validation_error.kwargs.get('location'), errors)
+
+    return errors
+
+
+def validation_error_to_error(field, error, location, errors):
+    if isinstance(error, dict):
+        for f, e in error.items():
+            validation_error_to_error(f, e, location, errors)
+    elif isinstance(error, list):
+        error = error[0]
+        if isinstance(error, str):
+            errors.append(Error(error, location=location, field=field))
+        elif isinstance(error, dict):
+            errors.append(Error(error.get('message'), error.get('code'), location, field))

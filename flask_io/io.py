@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import logging
 
 from collections import OrderedDict
 from flask import request
 from inspect import isclass
-from marshmallow import fields
+from marshmallow import fields, missing, ValidationError
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
-from .actions import ActionContext
 from .encoders import json_decode, json_encode
-from .utils import get_best_match_for_content_type, get_func_name, get_request_params, errors_to_dict
-from .utils import convert_validation_errors, http_status_message, marshal, unpack
+from .utils import get_best_match_for_content_type, errors_to_dict
+from .utils import http_status_message, marshal, unpack, validation_error_to_errors
 
 
 class FlaskIO(object):
@@ -31,14 +31,6 @@ class FlaskIO(object):
 
     def __init__(self, app=None):
         self.__app = None
-        self.__actions = {}
-        self.__sources = {
-            'body': lambda n, m: self.__decode_data(request.data),
-            'cookie': lambda n, m: get_request_params(request.cookies, n, m),
-            'form': lambda n, m: get_request_params(request.form, n, m),
-            'header': lambda n, m: get_request_params(request.headers, n, m),
-            'query': lambda n, m: get_request_params(request.args, n, m)
-        }
 
         self.decoders = OrderedDict([('application/json', json_decode)])
         self.encoders = OrderedDict([('application/json', json_encode)])
@@ -52,69 +44,63 @@ class FlaskIO(object):
         self.__app = app
         self.__app.before_first_request(self.__wrap_views)
 
-    def bad_request(self, errors):
-        return self.make_response((errors_to_dict(errors), 400))
+    def bad_request(self, error):
+        return self.make_response((errors_to_dict(error), 400))
 
-    def conflict(self, errors):
-        return self.make_response((errors_to_dict(errors), 409))
+    def conflict(self, error):
+        return self.make_response((errors_to_dict(error), 409))
 
-    def forbidden(self, errors):
-        return self.make_response((errors_to_dict(errors), 403))
+    def forbidden(self, error):
+        return self.make_response((errors_to_dict(error), 403))
 
     def no_content(self):
         return self.make_response(None)
 
-    def not_found(self, errors):
-        return self.make_response((errors_to_dict(errors), 404))
+    def not_found(self, error):
+        return self.make_response((errors_to_dict(error), 404))
 
     def ok(self, data, schema=None, envelope=None):
         data = marshal(data, schema, envelope)
         return self.make_response(data)
 
-    def unauthorized(self, errors):
-        return self.make_response((errors_to_dict(errors), 401))
+    def unauthorized(self, error):
+        return self.make_response((errors_to_dict(error), 401))
 
-    def from_body(self, param_name, schema=None):
+    def from_body(self, param_name, schema):
         schema = schema() if isclass(schema) else schema
 
-        def wrapper(func):
-            self.__get_action(func).add_parameter(param_name, schema, 'body')
-            return func
-        return wrapper
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                kwargs[param_name] = self.__parse_schema(schema, request.data, 'body')
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
 
     def from_cookie(self, param_name, field):
-        def wrapper(func):
-            self.__get_action(func).add_parameter(param_name, field, 'cookie')
-            return func
-        return wrapper
+        return self.__from_source(param_name, field, lambda: request.cookies, 'cookie')
 
     def from_form(self, param_name, field):
-        def wrapper(func):
-            self.__get_action(func).add_parameter(param_name, field, 'form')
-            return func
-        return wrapper
+        return self.__from_source(param_name, field, lambda: request.form, 'form')
 
     def from_header(self, param_name, field):
-        def wrapper(func):
-            self.__get_action(func).add_parameter(param_name, field, 'header')
-            return func
-        return wrapper
+        return self.__from_source(param_name, field, lambda: request.headers, 'header')
 
-    def from_query(self, param_name, field=None):
-        def wrapper(func):
-            self.__get_action(func).add_parameter(param_name, field, 'query')
-            return func
-        return wrapper
+    def from_query(self, param_name, field):
+        return self.__from_source(param_name, field, lambda: request.args, 'query')
 
     def marshal_with(self, schema, envelope=None):
         schema = schema() if isclass(schema) else schema
 
-        def wrapper(func):
-            action = self.__get_action(func)
-            action.output_schema = schema
-            action.output_envelope = envelope
-            return func
-        return wrapper
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                data = func(*args, **kwargs)
+                if isinstance(data, self.__app.response_class):
+                    return data
+                return marshal(data, schema, envelope)
+            return wrapper
+        return decorator
 
     def make_response(self, data):
         status = headers = None
@@ -167,45 +153,76 @@ class FlaskIO(object):
 
         return decoder(data)
 
-    def __get_action(self, func):
-        func_name = get_func_name(func)
+    def __from_source(self, param_name, field, getter_data, location):
+        field = field() if isclass(field) else field
+        if not field.required:
+            field.allow_none = True
 
-        action = self.__actions.get(func_name)
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                kwargs[param_name] = self.__parse_field(param_name, field, getter_data(), location)
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
 
-        if not action:
-            action = self.__actions[func_name] = ActionContext(func_name)
+    def __handle_error(self, e):
+        if isinstance(e, HTTPException):
+            code = e.code
+            error = getattr(e, 'description', http_status_message(code))
+        elif isinstance(e, ValidationError):
+            code = 400
+            error = validation_error_to_errors(e)
+        else:
+            code = 500
+            error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
+            self.logger.error(str(e))
 
-        return action
+        error = errors_to_dict(error)
 
-    def __get_param_values(self, params):
-        data = {}
-        for param_name, field_or_schema, location in params:
-            multiple = isinstance(field_or_schema, fields.List)
-            value = self.__sources[location](param_name, multiple)
-            if value is not None and value != '':
-                data[param_name] = value
-        return data
+        return self.make_response((error, code))
 
-    def __process_action(self, func):
-        action = self.__get_action(func)
+    def __parse_field(self, field_name, field, data, location):
+        attr_name = field.attribute if field.attribute else field_name
 
+        field.allow_none = True
+
+        if isinstance(field, fields.List):
+            raw_value = data.getlist(attr_name) or missing
+        else:
+            raw_value = data.get(attr_name) or missing
+
+        if raw_value is missing and field.load_from:
+            attr_name = field.load_from
+            raw_value = data.get(field.load_from, missing)
+
+        if raw_value is missing:
+            missing_value = field.missing
+            raw_value = missing_value() if callable(missing_value) else missing_value
+
+        if raw_value is missing and not field.required:
+            raw_value = None
+
+        try:
+            return field.deserialize(raw_value, attr_name, data)
+        except ValidationError as e:
+            e.messages = {field_name: e.messages}
+            e.kwargs['location'] = location
+            raise
+
+    def __parse_schema(self, schema, data, location):
+        decoded_data = self.__decode_data(data)
+        model, errors = schema.load(decoded_data)
+
+        if errors:
+            raise ValidationError(errors, data=data, location=location)
+
+        return model
+
+    def __process_request(self, func):
         def decorator(**kwargs):
             try:
-                if action.params:
-                    values = self.__get_param_values(action.params)
-                    data, errors = action.input_schema.load(values)
-
-                    if errors:
-                        return self.bad_request(convert_validation_errors(errors, action.params))
-
-                    kwargs.update(data)
-
                 response = func(**kwargs)
-
-                if not isinstance(response, self.__app.response_class):
-                    if action.output_schema:
-                        response = marshal(response, action.output_schema, action.output_envelope)
-
                 return self.make_response(response)
             except Exception as e:
                 return self.__handle_error(e)
@@ -214,22 +231,4 @@ class FlaskIO(object):
 
     def __wrap_views(self):
         for key in self.__app.view_functions.keys():
-            self.__app.view_functions[key] = self.__process_action(self.__app.view_functions[key])
-
-    def __handle_error(self, e):
-        if isinstance(e, HTTPException):
-            code = e.code
-            message = getattr(e, 'description', http_status_message(code))
-        else:
-            code = 500
-
-            if self.__app.config.get('DEBUG'):
-                message = str(e)
-            else:
-                message = http_status_message(code)
-
-            self.logger.error(str(e))
-
-        error = errors_to_dict(message)
-
-        return self.make_response((error, code))
+            self.__app.view_functions[key] = self.__process_request(self.__app.view_functions[key])

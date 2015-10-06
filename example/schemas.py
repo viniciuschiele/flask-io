@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from marshmallow import fields, Schema
+from marshmallow import fields, post_load, Schema
 from marshmallow.validate import Length
 from .models import User
 
@@ -25,6 +25,7 @@ class UserSchema(Schema):
     enabled = fields.Boolean(required=True)
     created_at = fields.DateTime(dump_only=True)
 
+    @post_load
     def make_object(self, data):
         return User(**data)
 
@@ -35,6 +36,7 @@ class UpdateUserSchema(Schema):
     email = fields.Email(required=True)
     enabled = fields.Boolean(required=True)
 
+    @post_load
     def make_object(self, data):
         return User(**data)
 
