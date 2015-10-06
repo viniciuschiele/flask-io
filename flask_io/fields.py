@@ -29,7 +29,7 @@ class Enum(fields.Field):
         else:
             self.member_type = type(list(self.enum_type)[0].value)
 
-        self.validators.add(validate.OneOf([v.value for v in self.enum_type]))
+        self.validators.append(validate.OneOf([v.value for v in self.enum_type]))
 
     def _serialize(self, value, attr, obj):
         if type(value) is self.enum_type:
