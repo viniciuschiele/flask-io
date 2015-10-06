@@ -27,34 +27,7 @@ class TestRequestBody(TestCase):
         self.io.init_app(self.app)
         self.client = self.app.test_client()
 
-    def test_noschema(self):
-        @self.app.route('/resource', methods=['POST'])
-        @self.io.from_body('param1')
-        def test(param1):
-            self.assertEqual(type(param1), dict)
-            self.assertEqual(param1.get('id'), 1234)
-            self.assertEqual(param1.get('name'), 'test')
-
-        data = dict(id=1234, name='test')
-        headers = {'content-type': 'application/json'}
-        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
-        self.assertEqual(response.status_code, 204)
-
-    def test_schema(self):
-        @self.app.route('/resource', methods=['POST'])
-        @self.io.from_body('user', UserSchema)
-        def test(user):
-            self.assertEqual(type(user), User)
-            self.assertEqual(user.username, 'user1')
-            self.assertEqual(user.password, 'pass1')
-
-        data = UserSchema().dump(User('user1', 'pass1')).data
-
-        headers = {'content-type': 'application/json'}
-        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
-        self.assertEqual(response.status_code, 204)
-
-    def test_invalid_schema(self):
+    def test_invalid_body(self):
         @self.app.route('/resource', methods=['POST'])
         @self.io.from_body('user', UserSchema)
         def test(user):
@@ -68,7 +41,21 @@ class TestRequestBody(TestCase):
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
         self.assertEqual(response.status_code, 400)
 
-    def test_empty_content_type(self):
+    def test_valid_body(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.from_body('user', UserSchema)
+        def test(user):
+            self.assertEqual(type(user), User)
+            self.assertEqual(user.username, 'user1')
+            self.assertEqual(user.password, 'pass1')
+
+        data = UserSchema().dump(User('user1', 'pass1')).data
+
+        headers = {'content-type': 'application/json'}
+        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
+        self.assertEqual(response.status_code, 204)
+
+    def test_no_content_type(self):
         @self.app.route('/resource', methods=['POST'])
         @self.io.from_body('user', UserSchema)
         def test(user):
