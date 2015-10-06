@@ -24,7 +24,6 @@ class ActionContext(object):
         self.__input_schema = None
         self.output_schema = None
         self.output_envelope = None
-        self.trace_enabled = False
 
     @property
     def input_schema(self):

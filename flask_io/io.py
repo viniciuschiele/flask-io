@@ -21,15 +21,13 @@ from marshmallow import fields
 from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
 from .actions import ActionContext
 from .encoders import json_decode, json_encode
-from .time import Stopwatch
 from .utils import get_best_match_for_content_type, get_func_name, get_request_params, errors_to_dict
-from .utils import collect_trace_data, convert_validation_errors, http_status_message, marshal, unpack
+from .utils import convert_validation_errors, http_status_message, marshal, unpack
 
 
 class FlaskIO(object):
     default_decoder = 'application/json'
     default_encoder = 'application/json'
-    trace_enabled = False
 
     def __init__(self, app=None):
         self.__app = None
@@ -42,9 +40,6 @@ class FlaskIO(object):
             'query': lambda n, m: get_request_params(request.args, n, m)
         }
 
-        self.__trace_data_handler = None
-        self.__trace_output_handler = self.__write_trace_data
-
         self.decoders = OrderedDict([('application/json', json_decode)])
         self.encoders = OrderedDict([('application/json', json_encode)])
 
@@ -56,8 +51,6 @@ class FlaskIO(object):
     def init_app(self, app):
         self.__app = app
         self.__app.before_first_request(self.__wrap_views)
-
-        self.trace_enabled = self.__app.config.get('TRACE_ENABLED', self.trace_enabled)
 
     def bad_request(self, errors):
         return self.make_response((errors_to_dict(errors), 400))
@@ -161,25 +154,6 @@ class FlaskIO(object):
             return func
         return wrapper
 
-    def trace(self):
-        def wrapper(func):
-            action = self.__get_action(func)
-            action.trace_enabled = True
-            return func
-        return wrapper
-
-    def trace_data_handler(self):
-        def decorator(f):
-            self.__trace_data_handler = f
-            return f
-        return decorator
-
-    def trace_output_handler(self):
-        def decorator(f):
-            self.__trace_output_handler = f
-            return f
-        return decorator
-
     def __decode_data(self, data):
         if not data:
             return None
@@ -216,10 +190,6 @@ class FlaskIO(object):
         action = self.__get_action(func)
 
         def decorator(**kwargs):
-            latency_total = Stopwatch.start_new()
-            latency_func = Stopwatch()
-            response = error = None
-
             try:
                 if action.params:
                     values = self.__get_param_values(action.params)
@@ -230,28 +200,15 @@ class FlaskIO(object):
 
                     kwargs.update(data)
 
-                try:
-                    latency_func.start()
-                    ret = func(**kwargs)
-                finally:
-                    latency_func.stop()
+                response = func(**kwargs)
 
-                if not isinstance(ret, self.__app.response_class):
+                if not isinstance(response, self.__app.response_class):
                     if action.output_schema:
-                        ret = marshal(ret, action.output_schema, action.output_envelope)
+                        response = marshal(response, action.output_schema, action.output_envelope)
 
-                response = self.make_response(ret)
-                return response
+                return self.make_response(response)
             except Exception as e:
-                error = e
                 return self.__handle_error(e)
-            finally:
-                if action.trace_enabled and self.trace_enabled:
-                    latency_total.stop()
-                    data = collect_trace_data(action, latency_total, latency_func, error, response)
-                    if self.__trace_data_handler:
-                        self.__trace_data_handler(data)
-                    self.__trace_output_handler(data)
 
         return decorator
 
@@ -276,11 +233,3 @@ class FlaskIO(object):
         error = errors_to_dict(message)
 
         return self.make_response((error, code))
-
-    def __write_trace_data(self, data):
-        message = ''
-
-        for key, value in data.items():
-            message += key + ': ' + str(value) + '\r\n'
-
-        self.logger.info(message)

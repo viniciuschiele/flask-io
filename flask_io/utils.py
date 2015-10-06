@@ -12,29 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import OrderedDict
 from flask import request
 from werkzeug.http import HTTP_STATUS_CODES
 from .errors import Error
-
-
-def collect_trace_data(action, latency_total, latency_func, error, response):
-    data = OrderedDict()
-    data['func'] = action.func_name
-    if error:
-        data['error'] = str(error)
-    data['latency_total'] = '%.5f' % latency_total.elapsed
-    data['latency_func'] = '%.5f' % latency_func.elapsed
-    data['request_method'] = request.environ['REQUEST_METHOD']
-    data['request_url'] = request.url
-
-    body = request.get_data(as_text=True)
-    if body:
-        data['request_body'] = body
-
-    if response:
-        data['response_status'] = response.status_code
-    return data
 
 
 def convert_validation_errors(errors, params):
