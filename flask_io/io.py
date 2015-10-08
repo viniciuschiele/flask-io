@@ -178,9 +178,9 @@ class FlaskIO(object):
             error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
             self.logger.error(str(e))
 
-        error = errors_to_dict(error)
+        errors = errors_to_dict(error)
 
-        return self.make_response((error, code))
+        return self.make_response((errors, code))
 
     def __parse_field(self, field_name, field, data, location):
         attr_name = field.attribute if field.attribute else field_name

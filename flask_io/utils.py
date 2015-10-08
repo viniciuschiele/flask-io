@@ -26,14 +26,7 @@ def errors_to_dict(errors):
     errors_data = []
 
     for error in errors:
-        error_data = {'message': error.message}
-        if error.code:
-            error_data['code'] = error.code
-        if error.location:
-            error_data['location'] = error.location
-        if error.field:
-            error_data['field'] = error.field
-        errors_data.append(error_data)
+        errors_data.append(error.as_dict())
 
     return errors_data
 
