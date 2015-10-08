@@ -70,6 +70,22 @@ class TestResponseStatus(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertTrue(response.content_type.startswith('text/html'))
 
+    def test_error(self):
+        @self.app.route('/resource', methods=['POST'])
+        def test():
+            raise Exception('error')
+
+        response = self.client.post('/resource')
+
+        self.assertEqual(response.status_code, 500)
+        self.assertTrue(response.content_type.startswith('application/json'))
+
+        data = json.loads(response.get_data(as_text=True))
+
+        self.assertEqual(type(data.get('errors')), list)
+        self.assertEqual(len(data.get('errors')), 1)
+
+
 
 class UserSchema(Schema):
     username = fields.String()

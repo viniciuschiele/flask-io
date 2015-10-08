@@ -28,7 +28,7 @@ def errors_to_dict(errors):
     for error in errors:
         errors_data.append(error.as_dict())
 
-    return errors_data
+    return dict(errors=errors_data)
 
 
 def get_best_match_for_content_type(mimetypes, default=None):
