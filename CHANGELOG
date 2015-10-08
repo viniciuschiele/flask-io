@@ -1,5 +1,11 @@
 # Changelog
 
+### Version 1.5.0
+ - Changed error response to wrap the list of errors into an attribute 'errors'
+ - Added extra arguments to the error class
+ - Refactored/Simplified the core
+ - Removed trace feature
+
 ### Version 1.4.1
  - Bug fixed in the Enum field
 
