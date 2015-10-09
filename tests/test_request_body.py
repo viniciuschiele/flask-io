@@ -27,7 +27,17 @@ class TestRequestBody(TestCase):
         self.io.init_app(self.app)
         self.client = self.app.test_client()
 
-    def test_invalid_body(self):
+    def test_invalid_payload_format(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.from_body('user', UserSchema)
+        def test(user):
+            pass
+
+        headers = {'content-type': 'application/json'}
+        response = self.client.post('/resource', data='invalid data', headers=headers)
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_field(self):
         @self.app.route('/resource', methods=['POST'])
         @self.io.from_body('user', UserSchema)
         def test(user):
@@ -41,7 +51,7 @@ class TestRequestBody(TestCase):
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
         self.assertEqual(response.status_code, 400)
 
-    def test_valid_body(self):
+    def test_valid_fields(self):
         @self.app.route('/resource', methods=['POST'])
         @self.io.from_body('user', UserSchema)
         def test(user):
@@ -54,6 +64,15 @@ class TestRequestBody(TestCase):
         headers = {'content-type': 'application/json'}
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
         self.assertEqual(response.status_code, 204)
+
+    def test_missing_payload(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.from_body('user', UserSchema)
+        def test(user):
+            pass
+
+        response = self.client.post('/resource')
+        self.assertEqual(response.status_code, 400)
 
     def test_no_content_type(self):
         @self.app.route('/resource', methods=['POST'])
