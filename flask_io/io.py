@@ -19,7 +19,7 @@ from collections import OrderedDict
 from flask import request
 from inspect import isclass
 from marshmallow import fields, missing, ValidationError
-from werkzeug.exceptions import InternalServerError, HTTPException, NotAcceptable
+from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, NotAcceptable
 from .encoders import json_decode, json_encode
 from .utils import get_best_match_for_content_type, errors_to_dict
 from .utils import http_status_message, marshal, unpack, validation_error_to_errors
@@ -72,7 +72,7 @@ class FlaskIO(object):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
-                kwargs[param_name] = self.__parse_schema(schema, request.data, 'body')
+                kwargs[param_name] = self.__parse_body(schema)
                 return func(*args, **kwargs)
             return wrapper
         return decorator
@@ -141,9 +141,6 @@ class FlaskIO(object):
         return wrapper
 
     def __decode_data(self, data):
-        if not data:
-            return None
-
         mimetype = get_best_match_for_content_type(self.decoders, self.default_decoder)
 
         if not mimetype:
@@ -151,7 +148,10 @@ class FlaskIO(object):
 
         decoder = self.decoders.get(mimetype)
 
-        return decoder(data)
+        try:
+            return decoder(data)
+        except:
+            raise BadRequest('Invalid payload format.')
 
     def __from_source(self, param_name, field, getter_data, location):
         field = field() if isclass(field) else field
@@ -210,12 +210,19 @@ class FlaskIO(object):
             e.kwargs['location'] = location
             raise
 
-    def __parse_schema(self, schema, data, location):
-        decoded_data = self.__decode_data(data)
+    def __parse_body(self, schema):
+        if not request.data:
+            raise BadRequest('Payload is missing.')
+
+        try:
+            decoded_data = self.__decode_data(request.data)
+        except:
+            raise BadRequest('Invalid payload format.')
+
         model, errors = schema.load(decoded_data)
 
         if errors:
-            raise ValidationError(errors, data=data, location=location)
+            raise ValidationError(errors, data=request.data, location='body')
 
         return model
 
