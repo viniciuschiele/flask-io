@@ -13,14 +13,15 @@
 # limitations under the License.
 
 import functools
-import logging
 
 from collections import OrderedDict
 from flask import request
 from inspect import isclass
+from logging import getLogger
 from marshmallow import fields, missing, ValidationError
 from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, NotAcceptable
 from .encoders import json_decode, json_encode
+from .tracing import Stopwatch, Tracer
 from .utils import get_best_match_for_content_type, errors_to_dict
 from .utils import http_status_message, marshal, unpack, validation_error_to_errors
 
@@ -35,14 +36,18 @@ class FlaskIO(object):
         self.decoders = OrderedDict([('application/json', json_decode)])
         self.encoders = OrderedDict([('application/json', json_encode)])
 
-        self.logger = logging.getLogger('flask-io')
+        self.logger = getLogger('flask-io')
+
+        self.tracer = Tracer(self)
 
         if app:
             self.init_app(app)
 
     def init_app(self, app):
         self.__app = app
-        self.__app.before_first_request(self.__wrap_views)
+        self.__app.before_first_request(self.__set_up)
+
+        self.tracer.enabled = self.__app.config.get('TRACE_ENABLED', self.tracer.enabled)
 
     def bad_request(self, error):
         return self.make_response((errors_to_dict(error), 400))
@@ -65,6 +70,18 @@ class FlaskIO(object):
 
     def unauthorized(self, error):
         return self.make_response((errors_to_dict(error), 401))
+
+    def decoder(self, media_type):
+        def wrapper(func):
+            self.decoders[media_type] = func
+            return func
+        return wrapper
+
+    def encoder(self, media_type):
+        def wrapper(func):
+            self.encoders[media_type] = func
+            return func
+        return wrapper
 
     def from_body(self, param_name, schema):
         schema = schema() if isclass(schema) else schema
@@ -128,17 +145,17 @@ class FlaskIO(object):
 
         return data
 
-    def decoder(self, media_type):
-        def wrapper(func):
-            self.decoders[media_type] = func
-            return func
-        return wrapper
+    def trace_inspect(self):
+        def decorator(f):
+            self.tracer.inspector = f
+            return f
+        return decorator
 
-    def encoder(self, media_type):
-        def wrapper(func):
-            self.encoders[media_type] = func
-            return func
-        return wrapper
+    def trace_emit(self):
+        def decorator(f):
+            self.tracer.emitter = f
+            return f
+        return decorator
 
     def __decode_data(self, data):
         mimetype = get_best_match_for_content_type(self.decoders, self.default_decoder)
@@ -226,16 +243,36 @@ class FlaskIO(object):
 
         return model
 
-    def __process_request(self, func):
+    def __process_request(self, func, should_trace):
         def decorator(**kwargs):
+            latency = response = error = None
+
+            if should_trace and self.tracer.enabled:
+                latency = Stopwatch.start_new()
+
             try:
                 response = func(**kwargs)
-                return self.make_response(response)
+                response = self.make_response(response)
+                return response
             except Exception as e:
-                return self.__handle_error(e)
+                error = e
+                response = self.__handle_error(e)
+                return response
+            finally:
+                if should_trace and self.tracer.enabled:
+                    latency.stop()
+                    self.tracer.trace(request, response, error, latency)
 
         return decorator
 
-    def __wrap_views(self):
-        for key in self.__app.view_functions.keys():
-            self.__app.view_functions[key] = self.__process_request(self.__app.view_functions[key])
+    def __set_up(self):
+        for endpoint in self.__app.view_functions.keys():
+            should_trace = False
+
+            for rule in self.__app.url_map.iter_rules(endpoint):
+                if self.tracer.match(rule):
+                    should_trace = True
+                    break
+
+            self.__app.view_functions[endpoint] = \
+                self.__process_request(self.__app.view_functions[endpoint], should_trace)
