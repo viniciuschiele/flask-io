@@ -8,7 +8,7 @@ setup(
     license='Apache 2.0',
     author='Vinicius Chiele',
     author_email='vinicius.chiele@gmail.com',
-    description='Flask IO is a library for Python 3+ which make easier to parse request arguments and serialize responses.',
+    description='Flask-IO is a library for parsing Flask request arguments into parameters and for serialization of complex objects into Flask response.',
     keywords=['flask', 'rest', 'parse', 'encode', 'decode', 'request', 'json', 'marshmallow'],
     install_requires=['flask>=0.10.1', 'python-dateutil>=2.4.2', 'marshmallow==2.1.0'],
     classifiers=[
