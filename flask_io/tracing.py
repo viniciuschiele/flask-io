@@ -14,6 +14,7 @@
 
 from collections import OrderedDict
 from time import perf_counter
+from .utils import format_trace_data
 
 
 class Tracer(object):
@@ -64,42 +65,7 @@ class Tracer(object):
         return data
 
     def __default_emit_trace(self, data):
-        request_method = data.pop('request_method', None)
-        request_url = data.pop('request_url', None)
-        latency = data.pop('latency', None)
-        request_headers = data.pop('request_headers', None)
-        request_body = data.pop('request_body', None)
-        response_status = data.pop('response_status', None)
-        error = data.pop('error', None)
-
-        message = ''
-
-        if request_method:
-            message += request_method + ' '
-
-        if request_url:
-            message += request_url + ' '
-
-        if response_status:
-            message += str(response_status) + ' '
-
-        if latency:
-            message += '%.5f' % latency
-
-        message += '\r\n'
-
-        for key, value in data.items():
-            message += key + ': ' + str(value) + '\r\n'
-
-        if request_headers:
-            for key, value in request_headers.items():
-                message += key + ': ' + str(value) + '\r\n'
-
-        if error:
-            message += '\r\n' + error
-        elif request_body:
-            message += '\r\n' + request_body
-
+        message = format_trace_data(data)
         self.io.logger.info(message)
 
 

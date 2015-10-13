@@ -31,6 +31,46 @@ def errors_to_dict(errors):
     return dict(errors=errors_data)
 
 
+def format_trace_data(data):
+    request_method = data.pop('request_method', None)
+    request_url = data.pop('request_url', None)
+    latency = data.pop('latency', None)
+    request_headers = data.pop('request_headers', None)
+    request_body = data.pop('request_body', None)
+    response_status = data.pop('response_status', None)
+    error = data.pop('error', None)
+
+    message = ''
+
+    if request_method:
+        message += request_method + ' '
+
+    if request_url:
+        message += request_url + ' '
+
+    if response_status:
+        message += str(response_status) + ' '
+
+    if latency:
+        message += '%.5f' % latency
+
+    message += '\r\n'
+
+    for key, value in data.items():
+        message += key + ': ' + str(value) + '\r\n'
+
+    if request_headers:
+        for key, value in request_headers.items():
+            message += key + ': ' + str(value) + '\r\n'
+
+    if error:
+        message += '\r\n' + error
+    elif request_body:
+        message += '\r\n' + request_body
+
+    return message
+
+
 def get_best_match_for_content_type(mimetypes, default=None):
     content_type = request.headers['content-type']
 
