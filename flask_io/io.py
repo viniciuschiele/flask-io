@@ -19,7 +19,7 @@ from flask import request
 from inspect import isclass
 from logging import getLogger
 from marshmallow import fields, missing, ValidationError
-from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, NotAcceptable
+from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, UnsupportedMediaType
 from .encoders import json_decode, json_encode
 from .tracing import Stopwatch, Tracer
 from .utils import get_best_match_for_content_type, errors_to_dict
@@ -161,7 +161,7 @@ class FlaskIO(object):
         mimetype = get_best_match_for_content_type(self.decoders, self.default_decoder)
 
         if not mimetype:
-            raise NotAcceptable('Content-Type is not supported: ' + request.headers['content-type'])
+            raise UnsupportedMediaType('Content-Type is not supported: ' + request.headers['content-type'])
 
         decoder = self.decoders.get(mimetype)
 
