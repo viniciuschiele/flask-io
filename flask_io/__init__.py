@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Make marshmallow's functions and classes importable from flask-io
+from marshmallow import post_load, post_dump, Schema, ValidationError
+from marshmallow.utils import missing
+
 from .io import FlaskIO
 from .errors import Error
 

@@ -18,8 +18,7 @@
 
 import string
 
-from marshmallow.validate import Validator
-from marshmallow.validate import ValidationError
+from marshmallow.validate import *
 
 
 class Complexity(Validator):

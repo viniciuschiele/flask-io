@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from marshmallow import fields, validate
-from marshmallow.validate import Length
+from marshmallow.fields import *
+from marshmallow.validate import Length, OneOf
 from .validate import Complexity
 
 
-class Enum(fields.Field):
+class Enum(Field):
     """A field that provides a set of enumerated values which an attribute must be constrained to."""
 
     def __init__(self, enum_type, member_type=None, *args, **kwargs):
@@ -29,7 +29,7 @@ class Enum(fields.Field):
         else:
             self.member_type = type(list(self.enum_type)[0].value)
 
-        self.validators.append(validate.OneOf([v.value for v in self.enum_type]))
+        self.validators.append(OneOf([v.value for v in self.enum_type]))
 
     def _serialize(self, value, attr, obj):
         if type(value) is self.enum_type:
@@ -52,7 +52,7 @@ class Enum(fields.Field):
             super()._validate(value)
 
 
-class Password(fields.Field):
+class Password(Field):
     def __init__(self, upper=1, lower=1, letters=1, digits=1, special=1, special_chars=None, min_length=6, max_length=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

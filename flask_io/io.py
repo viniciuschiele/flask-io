@@ -18,8 +18,8 @@ from collections import OrderedDict
 from flask import request
 from inspect import isclass
 from logging import getLogger
-from marshmallow import fields, missing, ValidationError
 from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, UnsupportedMediaType
+from . import fields, missing, ValidationError
 from .encoders import json_decode, json_encode
 from .tracing import Stopwatch, Tracer
 from .utils import get_best_match_for_content_type, errors_to_dict
