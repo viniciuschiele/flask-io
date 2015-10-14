@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask_io.validate import Complexity
-from marshmallow.validate import ValidationError
+from flask_io.validate import Complexity, ValidationError
 from unittest import TestCase
 
 

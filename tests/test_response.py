@@ -15,9 +15,7 @@
 import json
 
 from flask import Flask
-from flask_io import FlaskIO
-from flask_io.errors import Error
-from marshmallow import fields, Schema
+from flask_io import fields, FlaskIO, Error, Schema
 from unittest import TestCase
 
 

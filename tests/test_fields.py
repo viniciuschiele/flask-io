@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from marshmallow.validate import ValidationError
 from flask_io.fields import Password
+from flask_io.validate import ValidationError
 from unittest import TestCase
 
 

@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from flask import Flask
-from flask_io import FlaskIO
-from marshmallow import fields
+from flask_io import FlaskIO, fields
 from unittest import TestCase
 
 
