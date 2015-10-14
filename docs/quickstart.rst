@@ -16,8 +16,7 @@ Arguments can be retrieved using the following decorators:
 .. code-block:: python
 
     from flask import Flask
-    from flask_io import FlaskIO
-    from marshmallow import fields
+    from flask_io import FlaskIO, fields
 
     app = Flask(__name__)
     io = FlaskIO(app)
@@ -37,8 +36,7 @@ Complex object needs a `Schema <http://marshmallow.readthedocs.org/en/latest/api
 .. code-block:: python
 
     from flask import Flask
-    from flask_io import FlaskIO
-    from marshmallow import fields
+    from flask_io import FlaskIO, fields
 
     app = Flask(__name__)
     io = FlaskIO(app)

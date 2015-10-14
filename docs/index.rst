@@ -12,8 +12,7 @@ Flask-IO uses under the hood the library `marshmallow <https://pypi.python.org/p
 .. code-block:: python
 
     from flask import Flask
-    from flask_io import FlaskIO
-    from marshmallow import fields, post_load, validate
+    from flask_io import FlaskIO, fields, post_load, validate
 
     app = Flask(__name__)
     io = FlaskIO(app)
