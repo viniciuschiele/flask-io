@@ -88,9 +88,9 @@ class TestRequestArgs(TestCase):
         response = self.client.get('/resource?param1=11')
         self.assertEqual(response.status_code, 400)
 
-    def test_attribute_name(self):
+    def test_load_from(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param2', fields.Integer(attribute='param1'))
+        @self.io.from_query('param2', fields.Integer(load_from='param1'))
         def test(param2):
             self.assertEqual(param2, 10)
         response = self.client.get('/resource?param1=10')

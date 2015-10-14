@@ -200,17 +200,15 @@ class FlaskIO(object):
         return self.make_response((errors, code))
 
     def __parse_field(self, field_name, field, data, location):
-        attr_name = field.attribute if field.attribute else field_name
-
         field.allow_none = True
 
         if isinstance(field, fields.List):
-            raw_value = data.getlist(attr_name) or missing
+            raw_value = data.getlist(field_name) or missing
         else:
-            raw_value = data.get(attr_name) or missing
+            raw_value = data.get(field_name) or missing
 
         if raw_value is missing and field.load_from:
-            attr_name = field.load_from
+            field_name = field.load_from
             raw_value = data.get(field.load_from, missing)
 
         if raw_value is missing:
@@ -221,7 +219,7 @@ class FlaskIO(object):
             raw_value = None
 
         try:
-            return field.deserialize(raw_value, attr_name, data)
+            return field.deserialize(raw_value, field_name, data)
         except ValidationError as e:
             e.messages = {field_name: e.messages}
             e.kwargs['location'] = location
