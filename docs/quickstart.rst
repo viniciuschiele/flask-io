@@ -22,9 +22,11 @@ Arguments can be retrieved using the following decorators:
     io = FlaskIO(app)
 
     @app.route('/')
-    @io.from_query('username', fields.String(required=True))
-    def does_username_exist(username):
-        return False
+    @io.from_query('first_name', fields.String())
+    @io.from_query('limit', fields.Integer(missing=10))
+    @io.from_header('token', fields.String(required=True, load_from='Authorization'))
+    def find_users(first_name, limit, token):
+        pass
 
 Each parameter accepts either a `Field <http://marshmallow.readthedocs.org/en/latest/api_reference.html#module-marshmallow.fields>`_ or `Schema <http://marshmallow.readthedocs.org/en/latest/api_reference.html#schema>`_ to parse the arguments, the full documentation about those classes can be found `here <http://marshmallow.readthedocs.org>`_.
 
