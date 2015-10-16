@@ -25,8 +25,11 @@ class Tracer(object):
         self.inspector = lambda data: None
         self.emitter = self.__default_emit_trace
 
-    def add_filter(self, methods):
-        filter = TraceFilter(methods)
+    def add_filter(self, methods=None, endpoints=None):
+        if not methods and not endpoints:
+            raise ValueError('Filter cannot be added with no criteria.')
+
+        filter = TraceFilter(methods, endpoints)
         self.filters.append(filter)
         return filter
 
@@ -70,13 +73,21 @@ class Tracer(object):
 
 
 class TraceFilter(object):
-    def __init__(self, methods):
+    def __init__(self, methods, endpoints):
         self.methods = methods
+        self.endpoints = endpoints
 
     def match(self, rule):
-        for method in self.methods:
-            if method in rule.methods:
-                return True
+        if self.methods:
+            for method in self.methods:
+                if method in rule.methods:
+                    return True
+
+        if self.endpoints:
+            for endpoint in self.endpoints:
+                if endpoint == rule.endpoint:
+                    return True
+
         return False
 
 
