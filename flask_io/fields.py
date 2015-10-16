@@ -17,6 +17,22 @@ from marshmallow.validate import Length, OneOf
 from .validate import Complexity
 
 
+class DelimitedList(List):
+    delimiter = ','
+
+    def __init__(self, cls_or_instance, delimiter=None, **kwargs):
+        self.delimiter = delimiter or self.delimiter
+        super().__init__(cls_or_instance, **kwargs)
+
+    def _serialize(self, value, attr, obj):
+        values = super()._serialize(value, attr, obj)
+        return self.delimiter.join(format(v) for v in values)
+
+    def _deserialize(self, value, attr, data):
+        values = value.split(self.delimiter)
+        return super()._deserialize(values, attr, data)
+
+
 class Enum(Field):
     """A field that provides a set of enumerated values which an attribute must be constrained to."""
 

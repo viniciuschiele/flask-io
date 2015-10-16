@@ -24,6 +24,18 @@ class MyEnum(Enum):
     member3 = 3
 
 
+class TestDelimitedList(TestCase):
+    def test_serialize(self):
+        field = fields.DelimitedList(fields.Integer)
+
+        self.assertEqual(field.serialize('a', {'a': [1, 2, 3]}), '1,2,3')
+
+    def test_deserialize(self):
+        field = fields.DelimitedList(fields.Integer)
+
+        self.assertEqual(field.deserialize('1,2, 3'), [1, 2, 3])
+
+
 class TestEnum(TestCase):
     def test_serialize(self):
         field = fields.Enum(MyEnum)
