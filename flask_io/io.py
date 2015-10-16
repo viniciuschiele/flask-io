@@ -202,14 +202,12 @@ class FlaskIO(object):
     def __parse_field(self, field_name, field, data, location):
         field.allow_none = True
 
+        field_name = field.load_from or field_name
+
         if isinstance(field, fields.List):
             raw_value = data.getlist(field_name) or missing
         else:
             raw_value = data.get(field_name) or missing
-
-        if raw_value is missing and field.load_from:
-            field_name = field.load_from
-            raw_value = data.get(field.load_from, missing)
 
         if raw_value is missing:
             missing_value = field.missing
