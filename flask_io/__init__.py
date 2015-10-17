@@ -19,6 +19,6 @@ from marshmallow.utils import missing
 from .io import FlaskIO
 from .errors import Error
 
-__version__ = '1.5.0'
+__version__ = '1.6.0'
 __author__ = 'Vinicius Chiele'
 __license__ = 'Apache License 2.0'

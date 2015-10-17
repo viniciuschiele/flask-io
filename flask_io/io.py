@@ -45,7 +45,7 @@ class FlaskIO(object):
 
     def init_app(self, app):
         self.__app = app
-        self.__app.before_first_request(self.__set_up)
+        self.__app.before_first_request(self.__setup)
 
         self.tracer.enabled = self.__app.config.get('TRACE_ENABLED', self.tracer.enabled)
 
@@ -261,7 +261,7 @@ class FlaskIO(object):
 
         return decorator
 
-    def __set_up(self):
+    def __setup(self):
         for endpoint in self.__app.view_functions.keys():
             should_trace = False
 

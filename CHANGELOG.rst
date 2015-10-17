@@ -1,6 +1,14 @@
 Changelog
 ---------
 
+1.6.0
+++++++++++++++++++
+- Added DelimitedList field
+- Added request tracing
+- Made some marshmallow classes importable from the flask-io
+- Made parameters that use from_body mandatory
+- Updated marshmallow to the version 2.1.2
+
 1.5.0
 ++++++++++++++++++
 - Changed error response to wrap the list of errors into an attribute 'errors'

@@ -71,7 +71,7 @@ class TestResponseStatus(TestCase):
     def test_error(self):
         @self.app.route('/resource', methods=['POST'])
         def test():
-            raise Exception('error')
+            raise Exception('expected error in test_error')
 
         response = self.client.post('/resource')
 

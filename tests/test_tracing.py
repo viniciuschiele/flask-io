@@ -59,7 +59,7 @@ class TestTrace(TestCase):
 
         @self.app.route('/resource')
         def test():
-            raise Exception('error')
+            raise Exception('expected error in test_exception')
 
         @self.io.trace_inspect()
         def trace_inspect(data):

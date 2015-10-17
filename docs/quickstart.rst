@@ -51,8 +51,7 @@ Complex object needs a `Schema <http://marshmallow.readthedocs.org/en/latest/api
     def get_user(username):
         return User(username=username)
 
-Python's built-in types can be serialized without a Schema, for example, it is possible to return a dict` without a Schema specified.
-
+Python's built-in types can be serialized without a Schema, for example, it is possible to return a `dict` without a Schema specified.
 
 .. code-block:: python
 
