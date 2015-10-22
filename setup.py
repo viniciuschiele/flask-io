@@ -5,7 +5,7 @@ setup(
     version='1.6.0',
     packages=['flask_io'],
     url='https://github.com/viniciuschiele/flask-io',
-    license='Apache 2.0',
+    license='MIT',
     author='Vinicius Chiele',
     author_email='vinicius.chiele@gmail.com',
     description='Flask-IO is a library for parsing Flask request arguments into parameters and for serialization of complex objects into Flask response.',
