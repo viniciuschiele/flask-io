@@ -1,12 +1,28 @@
+"""
+Custom Field classes that extend marshmallow Field class.
+
+All fields from marshmallow has been imported here to allow the user import them from the flask-io.
+"""
+
 from marshmallow.fields import *
 from marshmallow.validate import Length, OneOf
 from .validate import Complexity
 
 
 class DelimitedList(List):
+    """
+    A delimited list composed with another `Field` class that loads from a delimited string.
+    """
+
     delimiter = ','
 
     def __init__(self, cls_or_instance, delimiter=None, **kwargs):
+        """
+        Initializes a new instance of `DelimitedList`.
+
+        :param Field cls_or_instance: A field class or instance.
+        :param str delimiter: Delimiter between values.
+        """
         self.delimiter = delimiter or self.delimiter
         super().__init__(cls_or_instance, **kwargs)
 
@@ -20,9 +36,18 @@ class DelimitedList(List):
 
 
 class Enum(Field):
-    """A field that provides a set of enumerated values which an attribute must be constrained to."""
+    """
+    A field that provides a set of enumerated values which an attribute must be constrained to.
+    """
 
     def __init__(self, enum_type, member_type=None, *args, **kwargs):
+        """
+        Initializes a new instance of `Enum`.
+
+        :param enum.Enum enum_type: A Python enum class.
+        :param member_type: A Python data type class, if not set, it will be taken the first member of the Enum.
+        """
+
         super().__init__(*args, **kwargs)
         self.enum_type = enum_type
 
@@ -55,7 +80,21 @@ class Enum(Field):
 
 
 class Password(Field):
+    """
+    A password field used to validate strong passwords.
+    """
     def __init__(self, upper=1, lower=1, letters=1, digits=1, special=1, special_chars=None, min_length=6, max_length=None, *args, **kwargs):
+        """
+        Initializes a new instance of `Password`.
+
+        :param int upper: Number of uppercase letters that the password must have.
+        :param int lower: Number of lowercase letters that the password must have.
+        :param int letters: Number of letters that the password must have.
+        :param int letters: Number of special characters that the password must have.
+        :param str special_chars: List of special characters allowed.
+        :param int min_length: Minimum of characters that the password must have.
+        :param int max_length: Maximum of characters that the password must have.
+        """
         super().__init__(*args, **kwargs)
 
         self.validators.append(Length(min_length, max_length))

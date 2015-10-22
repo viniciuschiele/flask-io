@@ -1,9 +1,16 @@
+"""
+Tracing classes.
+"""
+
 from collections import OrderedDict
-from time import perf_counter
 from .utils import format_trace_data
 
 
 class Tracer(object):
+    """
+    Responsible to collect and emit the tracing samples.
+    """
+
     def __init__(self, io):
         self.io = io
         self.filters = []
@@ -12,6 +19,13 @@ class Tracer(object):
         self.emitter = self.__default_emit_trace
 
     def add_filter(self, methods=None, endpoints=None):
+        """
+        Adds a filter.
+
+        :param methods: The http methods to be filtered.
+        :param endpoints: The endpoints to be filtered.
+        :return:
+        """
         if not methods and not endpoints:
             raise ValueError('Filter cannot be added with no criteria.')
 
@@ -20,6 +34,11 @@ class Tracer(object):
         return filter
 
     def match(self, rule):
+        """
+        Checks if the specified rule matches with any filter added.
+        :param rule: The Flask rule to be matched.
+        :return: True if there is a filter that matches.
+        """
         if len(self.filters) == 0:
             return True
 
@@ -29,6 +48,15 @@ class Tracer(object):
         return False
 
     def trace(self, request, response, error, latency):
+        """
+        Collects the data from the specified parameters and emit it.
+
+        :param request: The Flask request object.
+        :param response: The Flask response object.
+        :param error: The error occurred if any.
+        :param latency: The time elapsed to process the request.
+        """
+
         data = self.__collect_trace_data(request, response, error, latency)
 
         self.inspector(data)
@@ -59,11 +87,20 @@ class Tracer(object):
 
 
 class TraceFilter(object):
+    """
+    A tracing filter.
+    """
+
     def __init__(self, methods, endpoints):
         self.methods = methods
         self.endpoints = endpoints
 
     def match(self, rule):
+        """
+        Checks if the specified rule matches with the filter.
+        :param rule: The Flask rule to be matched.
+        :return: True if the filter matches.
+        """
         if self.methods:
             for method in self.methods:
                 if method in rule.methods:
@@ -75,39 +112,3 @@ class TraceFilter(object):
                     return True
 
         return False
-
-
-class Stopwatch(object):
-    def __init__(self):
-        self.elapsed = 0.0
-        self._start = None
-
-    @staticmethod
-    def start_new():
-        sw = Stopwatch()
-        sw.start()
-        return sw
-
-    def start(self):
-        if not self._start:
-            self._start = perf_counter()
-
-    def stop(self):
-        if self._start:
-            end = perf_counter()
-            self.elapsed += (end - self._start)
-            self._start = None
-
-    def reset(self):
-        self.elapsed = 0.0
-
-    @property
-    def running(self):
-        return self._start is not None
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, *args):
-        self.stop()

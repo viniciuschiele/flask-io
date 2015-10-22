@@ -3,7 +3,7 @@ from marshmallow import pre_load, pre_dump, post_load, post_dump, Schema, Valida
 from marshmallow.utils import missing
 
 from .io import FlaskIO
-from .errors import Error
+from .utils import Error
 
 __version__ = '1.6.0'
 __author__ = 'Vinicius Chiele'

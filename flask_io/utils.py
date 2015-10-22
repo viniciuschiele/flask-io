@@ -1,6 +1,6 @@
 from flask import request
+from time import perf_counter
 from werkzeug.http import HTTP_STATUS_CODES
-from .errors import Error
 
 
 def errors_to_dict(errors):
@@ -109,3 +109,57 @@ def validation_error_to_error(field, error, location, errors):
             errors.append(Error(error, location=location, field=field))
         elif isinstance(error, dict):
             errors.append(Error(error.get('message'), error.get('code'), location, field))
+
+
+class Error(object):
+    def __init__(self, message, code=None, location=None, field=None, **kwargs):
+        self.message = message
+        self.code = code
+        self.location = location
+        self.field = field
+        self.__dict__.update(kwargs)
+
+    def as_dict(self):
+        data = self.__dict__.copy()
+
+        for key in set(data.keys()):
+            if data[key] is None:
+                data.pop(key)
+
+        return data
+
+
+class Stopwatch(object):
+    def __init__(self):
+        self.elapsed = 0.0
+        self._start = None
+
+    @staticmethod
+    def start_new():
+        sw = Stopwatch()
+        sw.start()
+        return sw
+
+    def start(self):
+        if not self._start:
+            self._start = perf_counter()
+
+    def stop(self):
+        if self._start:
+            end = perf_counter()
+            self.elapsed += (end - self._start)
+            self._start = None
+
+    def reset(self):
+        self.elapsed = 0.0
+
+    @property
+    def running(self):
+        return self._start is not None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args):
+        self.stop()

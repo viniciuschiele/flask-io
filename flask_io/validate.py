@@ -1,5 +1,8 @@
-# The code below was inspired by django-password library.
-# https://github.com/dstufft/django-passwords/blob/master/passwords/validators.py
+"""
+Custom Validator classes that extend marshmallow Validator class.
+
+All validators from marshmallow has been imported here to allow the user import them from the flask-io.
+"""
 
 import string
 
@@ -7,9 +10,26 @@ from marshmallow.validate import *
 
 
 class Complexity(Validator):
+    """
+    A validator that allows to validate a str in several ways.
+
+    The code below was inspired by django-password library.
+    https://github.com/dstufft/django-passwords/blob/master/passwords/validators.py
+    """
+
+    # this has been added to prevent an issue with unit test.
     error = None
 
     def __init__(self, upper=0, lower=0, letters=0, digits=0, special=0, special_chars=None):
+        """
+        Initializes a new instance of `Complexity`.
+
+        :param int upper: Number of uppercase letters that the str must have.
+        :param int lower: Number of lowercase letters that the str must have.
+        :param int letters: Number of letters that the str must have.
+        :param int letters: Number of special characters that the str must have.
+        :param str special_chars: List of special characters allowed.
+        """
         self.upper = upper
         self.lower = lower
         self.letters = letters
