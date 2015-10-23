@@ -40,36 +40,31 @@ class Enum(Field):
     A field that provides a set of enumerated values which an attribute must be constrained to.
     """
 
-    def __init__(self, enum_type, member_type=None, *args, **kwargs):
+    def __init__(self, enum_type, *args, **kwargs):
         """
         Initializes a new instance of `Enum`.
 
         :param enum.Enum enum_type: A Python enum class.
-        :param member_type: A Python data type class, if not set, it will be taken the first member of the Enum.
         """
 
         super().__init__(*args, **kwargs)
         self.enum_type = enum_type
-
-        if member_type:
-            self.member_type = member_type
-        else:
-            self.member_type = type(list(self.enum_type)[0].value)
+        self.__member_type = type(list(self.enum_type)[0].value)
 
         self.validators.append(OneOf([v.value for v in self.enum_type]))
 
     def _serialize(self, value, attr, obj):
         if type(value) is self.enum_type:
             return value.value
-        if type(value) is not self.member_type:
-            value = self.member_type(value)
+        if type(value) is not self.__member_type:
+            value = self.__member_type(value)
         return self.enum_type(value).value
 
     def _deserialize(self, value, attr, data):
         if type(value) is self.enum_type:
             return value
-        if type(value) is not self.member_type:
-            value = self.member_type(value)
+        if type(value) is not self.__member_type:
+            value = self.__member_type(value)
         return self.enum_type(value)
 
     def _validate(self, value):
