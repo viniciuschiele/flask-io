@@ -67,6 +67,19 @@ class FlaskIO(object):
 
         return self.make_response((errors_to_dict(error), 409))
 
+    def created(self, data, schema=None, envelope=None):
+        """
+        Gets a 201 response with the specified data.
+
+        :param data: The content value.
+        :param schema: The schema to serialize the data.
+        :param data: The key used to envelope the data.
+        :return: A Flask response object.
+        """
+
+        data = marshal(data, schema, envelope)
+        return self.make_response((data, 201))
+
     def forbidden(self, error):
         """
         Gets a 403 response with the specified error.
