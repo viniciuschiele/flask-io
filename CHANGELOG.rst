@@ -1,6 +1,13 @@
 Changelog
 ---------
 
+1.7.0
+++++++++++++++++++
+- Apache Licence has been replaced by MIT Licence
+- Added method 'created' into FlaskIO class
+- Made pre_load and pre_dump decorators to be importable from flask-io
+- Updated marshmallow to the version 2.2.0
+
 1.6.0
 ++++++++++++++++++
 - Added DelimitedList field
