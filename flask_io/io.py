@@ -14,6 +14,7 @@ from .utils import marshal, unpack, validation_error_to_errors, Stopwatch
 
 class FlaskIO(object):
     """
+    The class responsible for parsing request into function parameters and deserialize function returns into response.
     """
 
     # default mime type for decode
@@ -23,6 +24,12 @@ class FlaskIO(object):
     default_encoder = 'application/json'
 
     def __init__(self, app=None):
+        """
+        Initializes a new instance.
+
+        :param app: A Flask instance class.
+        """
+
         self.__app = None
 
         self.decoders = OrderedDict([('application/json', json_decode)])

@@ -12,6 +12,11 @@ class Tracer(object):
     """
 
     def __init__(self, io):
+        """
+        Initializes a new instance.
+
+        :param io: A `FlaskIO` instance.
+        """
         self.io = io
         self.filters = []
         self.enabled = False
@@ -36,6 +41,7 @@ class Tracer(object):
     def match(self, rule):
         """
         Checks if the specified rule matches with any filter added.
+
         :param rule: The Flask rule to be matched.
         :return: True if there is a filter that matches.
         """
@@ -92,12 +98,20 @@ class TraceFilter(object):
     """
 
     def __init__(self, methods, endpoints):
+        """
+        Initializes a new instance.
+
+        :param methods: HTTP methods to be filtered.
+        :param endpoints: Endpoint names to be filtered.
+        """
+
         self.methods = methods
         self.endpoints = endpoints
 
     def match(self, rule):
         """
         Checks if the specified rule matches with the filter.
+
         :param rule: The Flask rule to be matched.
         :return: True if the filter matches.
         """

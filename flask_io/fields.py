@@ -44,7 +44,7 @@ class Enum(Field):
         """
         Initializes a new instance of `Enum`.
 
-        :param enum.Enum enum_type: A Python enum class.
+        :param enum_type: A Python enum class.
         """
 
         super().__init__(*args, **kwargs)
