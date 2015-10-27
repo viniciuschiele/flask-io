@@ -28,6 +28,7 @@ Flask-IO uses under the hood the library `marshmallow <https://pypi.python.org/p
         password = fields.String(load_only=True, validate=validate.Length(min=6))
         first_name = fields.String()
 
+        @post_load
         def make_object(data)
             return User(**data)
 
