@@ -40,3 +40,17 @@ class TestPassword(TestCase):
 
         self.assertEqual('Pa4sw@rd', field.deserialize('Pa4sw@rd'))
         self.assertRaises(ValidationError, field.deserialize, 'pa4sw@rd')
+
+
+class TestString(TestCase):
+    def test_none_if_empty(self):
+        field = fields.String(none_if_empty=True)
+
+        self.assertIsNone(field.serialize('a', {'a': ''}))
+        self.assertIsNone(field.deserialize(''))
+
+    def test_strip(self):
+        field = fields.String(strip=True)
+
+        self.assertEqual('b', field.serialize('a', {'a': ' b '}))
+        self.assertEqual('b', field.deserialize(' b '))

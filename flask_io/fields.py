@@ -4,9 +4,22 @@ Custom Field classes that extend marshmallow Field class.
 All fields from marshmallow has been imported here to allow the user import them from the flask-io.
 """
 
+
+from marshmallow import fields
 from marshmallow.fields import *
-from marshmallow.validate import Length, OneOf
-from .validate import Complexity
+from .validate import Complexity, Length, OneOf
+
+
+__all__ = [
+    'DelimitedList',
+    'Enum',
+    'Password',
+    'String'
+]
+
+
+for field_name in (field_name for field_name in fields.__all__ if field_name not in __all__):
+    __all__.append(field_name)
 
 
 class DelimitedList(List):
@@ -78,6 +91,7 @@ class Password(Field):
     """
     A password field used to validate strong passwords.
     """
+
     def __init__(self, upper=1, lower=1, letters=1, digits=1, special=1, special_chars=None, min_length=6, max_length=None, *args, **kwargs):
         """
         Initializes a new instance of `Password`.
@@ -94,3 +108,35 @@ class Password(Field):
 
         self.validators.append(Length(min_length, max_length))
         self.validators.append(Complexity(upper, lower, letters, digits, special, special_chars))
+
+
+class String(fields.String):
+    def __init__(self, none_if_empty=False, strip=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.strip = strip
+        self.none_if_empty = none_if_empty
+
+    def _serialize(self, value, attr, obj):
+        value = super()._serialize(value, attr, obj)
+
+        if self.strip and value:
+            value = value.strip()
+
+        if self.none_if_empty and not value:
+            return None
+
+        return value
+
+    def _deserialize(self, value, attr, data):
+        value = super()._deserialize(value, attr, data)
+
+        if self.strip and value:
+            value = value.strip()
+
+        if self.none_if_empty and not value:
+            value = None
+
+        return value
+
+# Aliases
+Str = String
