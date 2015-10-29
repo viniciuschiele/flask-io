@@ -111,10 +111,15 @@ class Password(Field):
 
 
 class String(fields.String):
-    def __init__(self, none_if_empty=False, strip=False, *args, **kwargs):
+    default_error_messages = {
+        'only_numeric': 'Only numeric chars are allowed.'
+    }
+
+    def __init__(self, none_if_empty=False, strip=False, only_numeric=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.strip = strip
         self.none_if_empty = none_if_empty
+        self.only_numeric = only_numeric
 
     def _serialize(self, value, attr, obj):
         value = super()._serialize(value, attr, obj)
@@ -137,6 +142,12 @@ class String(fields.String):
             value = None
 
         return value
+
+    def _validate(self, value):
+        if self.only_numeric and value:
+            if not value.isnumeric():
+                self.fail('only_numeric')
+        super()._validate(value)
 
 # Aliases
 Str = String

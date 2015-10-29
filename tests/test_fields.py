@@ -54,3 +54,9 @@ class TestString(TestCase):
 
         self.assertEqual('b', field.serialize('a', {'a': ' b '}))
         self.assertEqual('b', field.deserialize(' b '))
+
+    def test_only_numeric(self):
+        field = fields.String(only_numeric=True)
+
+        self.assertEqual('12345', field.deserialize('12345'))
+        self.assertRaises(ValidationError, field.deserialize, 'abcde')
