@@ -112,25 +112,16 @@ class Password(Field):
 
 class String(fields.String):
     default_error_messages = {
+        'empty': 'Field may not be empty.',
         'only_numeric': 'Only numeric chars are allowed.'
     }
 
-    def __init__(self, none_if_empty=False, strip=False, only_numeric=False, *args, **kwargs):
+    def __init__(self, allow_empty=True, none_if_empty=False, strip=False, only_numeric=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.allow_empty = allow_empty
         self.strip = strip
         self.none_if_empty = none_if_empty
         self.only_numeric = only_numeric
-
-    def _serialize(self, value, attr, obj):
-        value = super()._serialize(value, attr, obj)
-
-        if self.strip and value:
-            value = value.strip()
-
-        if self.none_if_empty and not value:
-            return None
-
-        return value
 
     def _deserialize(self, value, attr, data):
         value = super()._deserialize(value, attr, data)
@@ -138,15 +129,21 @@ class String(fields.String):
         if self.strip and value:
             value = value.strip()
 
-        if self.none_if_empty and not value:
+        if self.none_if_empty and value == '':
             value = None
 
         return value
 
     def _validate(self, value):
-        if self.only_numeric and value:
-            if not value.isnumeric():
-                self.fail('only_numeric')
+        if not self.allow_empty and value == '':
+            self.fail('empty')
+
+        if self.none_if_empty and not self.allow_none and value is None:
+            self.fail('null')
+
+        if self.only_numeric and value and not value.isnumeric():
+            self.fail('only_numeric')
+
         super()._validate(value)
 
 # Aliases

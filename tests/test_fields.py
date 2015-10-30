@@ -43,20 +43,25 @@ class TestPassword(TestCase):
 
 
 class TestString(TestCase):
+    def test_allow_empty(self):
+        field = fields.String()
+        self.assertEqual('', field.deserialize(''))
+
+        field = fields.String(allow_empty=False)
+        self.assertRaises(ValidationError, field.deserialize, '')
+
     def test_none_if_empty(self):
         field = fields.String(none_if_empty=True)
+        self.assertRaises(ValidationError, field.deserialize, '')
 
-        self.assertIsNone(field.serialize('a', {'a': ''}))
+        field = fields.String(allow_none=True, none_if_empty=True)
         self.assertIsNone(field.deserialize(''))
 
     def test_strip(self):
         field = fields.String(strip=True)
-
-        self.assertEqual('b', field.serialize('a', {'a': ' b '}))
         self.assertEqual('b', field.deserialize(' b '))
 
     def test_only_numeric(self):
         field = fields.String(only_numeric=True)
-
         self.assertEqual('12345', field.deserialize('12345'))
         self.assertRaises(ValidationError, field.deserialize, 'abcde')
