@@ -33,6 +33,15 @@ class TestEnum(TestCase):
 
         self.assertEqual(field.deserialize(2), MyEnum.member2)
 
+    def test_invalid_value(self):
+        field = fields.Enum(MyEnum)
+
+        self.assertRaises(ValidationError, field.deserialize, 10)
+        self.assertRaises(ValidationError, field.deserialize, '10')
+
+        self.assertRaises(ValidationError, field.serialize, 'a', {'a': 10})
+        self.assertRaises(ValidationError, field.serialize, 'a', {'a': '10'})
+
 
 class TestPassword(TestCase):
     def test_default_settings(self):

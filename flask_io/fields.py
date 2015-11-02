@@ -7,7 +7,7 @@ All fields from marshmallow has been imported here to allow the user import them
 
 from marshmallow import fields
 from marshmallow.fields import *
-from .validate import Complexity, Length, OneOf
+from .validate import Complexity, Length
 
 
 __all__ = [
@@ -64,27 +64,25 @@ class Enum(Field):
         self.enum_type = enum_type
         self.__member_type = type(list(self.enum_type)[0].value)
 
-        self.validators.append(OneOf([v.value for v in self.enum_type]))
-
     def _serialize(self, value, attr, obj):
-        if type(value) is self.enum_type:
-            return value.value
-        if type(value) is not self.__member_type:
-            value = self.__member_type(value)
-        return self.enum_type(value).value
+        try:
+            if type(value) is self.enum_type:
+                return value.value
+            if type(value) is not self.__member_type:
+                value = self.__member_type(value)
+            return self.enum_type(value).value
+        except:
+            self.fail('validator_failed')
 
     def _deserialize(self, value, attr, data):
-        if type(value) is self.enum_type:
-            return value
-        if type(value) is not self.__member_type:
-            value = self.__member_type(value)
-        return self.enum_type(value)
-
-    def _validate(self, value):
-        if type(value) is self.enum_type:
-            super()._validate(value.value)
-        else:
-            super()._validate(value)
+        try:
+            if type(value) is self.enum_type:
+                return value
+            if type(value) is not self.__member_type:
+                value = self.__member_type(value)
+            return self.enum_type(value)
+        except:
+            self.fail('validator_failed')
 
 
 class Password(Field):
