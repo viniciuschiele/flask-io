@@ -57,19 +57,6 @@ def format_trace_data(data):
     return message
 
 
-def get_best_match_for_content_type(mimetypes, default=None):
-    content_type = request.headers['content-type']
-
-    if not content_type:
-        return default
-
-    mimetype_expected = content_type.split(';')[0].lower()
-    for mimetype in mimetypes:
-        if mimetype_expected == mimetype:
-            return mimetype
-    return None
-
-
 def http_status_message(code):
     return HTTP_STATUS_CODES.get(code, '')
 

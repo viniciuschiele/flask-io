@@ -6,19 +6,17 @@ from inspect import isclass
 from logging import getLogger
 from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, UnsupportedMediaType
 from . import fields, missing, ValidationError
-from .encoders import json_decode, json_encode
+from .negotiation import DefaultContentNegotiation
+from .parsers import JSONParser
+from .encoders import json_encode
 from .tracing import Tracer
-from .utils import get_best_match_for_content_type, errors_to_dict, http_status_message
-from .utils import marshal, unpack, validation_error_to_errors, Stopwatch
+from .utils import errors_to_dict, http_status_message, marshal, unpack, validation_error_to_errors, Stopwatch
 
 
 class FlaskIO(object):
     """
     The class responsible for parsing request into function parameters and deserialize function returns into response.
     """
-
-    # default mime type for decode
-    default_decoder = 'application/json'
 
     # default mime type for encode
     default_encoder = 'application/json'
@@ -32,7 +30,9 @@ class FlaskIO(object):
 
         self.__app = None
 
-        self.decoders = OrderedDict([('application/json', json_decode)])
+        self.content_negotiation = DefaultContentNegotiation()
+        self.parsers = [JSONParser()]
+
         self.encoders = OrderedDict([('application/json', json_encode)])
 
         self.logger = getLogger('flask-io')
@@ -137,18 +137,6 @@ class FlaskIO(object):
         :return: A Flask response object.
         """
         return self.make_response((errors_to_dict(error), 401))
-
-    def decoder(self, media_type):
-        """
-        A decorator that sets a decoder for the specified media type.
-
-        :param media_type: The media type
-        :return: A function
-        """
-        def wrapper(func):
-            self.decoders[media_type] = func
-            return func
-        return wrapper
 
     def encoder(self, media_type):
         """
@@ -292,19 +280,6 @@ class FlaskIO(object):
             return f
         return decorator
 
-    def __decode_data(self, data):
-        mimetype = get_best_match_for_content_type(self.decoders, self.default_decoder)
-
-        if not mimetype:
-            raise UnsupportedMediaType('Content-Type is not supported: ' + request.headers['content-type'])
-
-        decoder = self.decoders.get(mimetype)
-
-        try:
-            return decoder(data)
-        except:
-            raise BadRequest('Invalid payload format.')
-
     def __from_source(self, param_name, field, getter_data, location):
         field = field() if isclass(field) else field
         if not field.required:
@@ -362,8 +337,13 @@ class FlaskIO(object):
         if not request.data:
             raise BadRequest('Payload is missing.')
 
+        parser = self.content_negotiation.select_parser(request, self.parsers)
+
+        if not parser:
+            raise UnsupportedMediaType('Content-Type is not supported: ' + request.headers['content-type'])
+
         try:
-            decoded_data = self.__decode_data(request.data)
+            decoded_data = parser.parse(request.data)
         except:
             raise BadRequest('Invalid payload format.')
 

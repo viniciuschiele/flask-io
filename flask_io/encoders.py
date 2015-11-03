@@ -6,15 +6,6 @@ except ImportError:
     import json
 
 
-def json_decode(data):
-    """
-    Deserializes a byte array containing a JSON document to a Python object.
-    :param data: A byte array containing a JSON document.
-    :return: A Python object.
-    """
-    return json.loads(data.decode())
-
-
 def json_encode(data):
     """
     Serializes a Python object into a byte array containing a JSON document.
