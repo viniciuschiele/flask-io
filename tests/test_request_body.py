@@ -72,6 +72,18 @@ class TestRequestBody(TestCase):
         response = self.client.post('/resource', data=json.dumps(data))
         self.assertEqual(response.status_code, 204)
 
+    def test_invalid_content_type(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.from_body('user', UserSchema)
+        def test(user):
+            pass
+
+        data = UserSchema().dump(User('user1', 'pass1')).data
+
+        headers = {'content-type': 'application/data'}
+        response = self.client.post('/resource', data=json.dumps(data), headers=headers)
+        self.assertEqual(response.status_code, 415)
+
 
 class User(object):
     def __init__(self, username, password):
