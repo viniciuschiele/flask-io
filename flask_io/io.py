@@ -4,11 +4,11 @@ from collections import OrderedDict
 from flask import request
 from inspect import isclass
 from logging import getLogger
-from werkzeug.exceptions import BadRequest, InternalServerError, HTTPException, UnsupportedMediaType
+from werkzeug.exceptions import BadRequest, HTTPException, NotAcceptable, UnsupportedMediaType
 from . import fields, missing, ValidationError
 from .negotiation import DefaultContentNegotiation
 from .parsers import JSONParser
-from .encoders import json_encode
+from .renderers import JSONRenderer
 from .tracing import Tracer
 from .utils import errors_to_dict, http_status_message, marshal, unpack, validation_error_to_errors, Stopwatch
 
@@ -17,9 +17,6 @@ class FlaskIO(object):
     """
     The class responsible for parsing request into function parameters and deserialize function returns into response.
     """
-
-    # default mime type for encode
-    default_encoder = 'application/json'
 
     def __init__(self, app=None):
         """
@@ -32,8 +29,7 @@ class FlaskIO(object):
 
         self.content_negotiation = DefaultContentNegotiation()
         self.parsers = [JSONParser()]
-
-        self.encoders = OrderedDict([('application/json', json_encode)])
+        self.renderers = [JSONRenderer()]
 
         self.logger = getLogger('flask-io')
 
@@ -138,18 +134,6 @@ class FlaskIO(object):
         """
         return self.make_response((errors_to_dict(error), 401))
 
-    def encoder(self, media_type):
-        """
-        A decorator that sets a encoder for the specified media type.
-
-        :param media_type: The media type
-        :return: A function
-        """
-        def wrapper(func):
-            self.encoders[media_type] = func
-            return func
-        return wrapper
-
     def from_body(self, param_name, schema):
         """
         A decorator that converts the request body into a function parameter based on the specified schema.
@@ -243,14 +227,12 @@ class FlaskIO(object):
         if data is None:
             data = self.__app.response_class(status=204)
         elif not isinstance(data, self.__app.response_class):
-            media_type = request.accept_mimetypes.best_match(self.encoders, default=self.default_encoder)
-            encoder = self.encoders.get(media_type)
+            renderer, media_type = self.content_negotiation.select_renderer(request, self.renderers)
 
-            if encoder is None:
-                raise InternalServerError()
+            if not renderer:
+                raise NotAcceptable()
 
-            data_bytes = encoder(data)
-
+            data_bytes = renderer.render(data, media_type)
             data = self.__app.response_class(data_bytes, mimetype=media_type)
 
         if status is not None:
