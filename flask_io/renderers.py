@@ -4,35 +4,34 @@ Renderers used to serialize a Python object into response body.
 
 from abc import ABCMeta, abstractmethod
 from . import json
-from .mediatypes import MediaType
+from .mimetypes import MimeType
 
 
 class Renderer(metaclass=ABCMeta):
-    media_type = None
+    mimetype = None
 
     @abstractmethod
-    def render(self, data, accepted_media_type):
+    def render(self, data, mimetype):
         pass
 
 
 class JSONRenderer(Renderer):
-    media_type = 'application/json'
+    mimetype = MimeType('application/json')
 
-    def render(self, data, accepted_media_type):
+    def render(self, data, mimetype):
         """
         Serializes a Python object into a byte array containing a JSON document.
         :param data: A Python object.
-        :param accepted_media_type:
         :return: A byte array containing a JSON document.
         """
 
-        indent = self.get_indent(accepted_media_type)
-        return json.dumps(data, indent=indent).encode('utf-8')
+        indent = self.get_indent(mimetype)
+        encoding = mimetype.params.get('charset') or 'utf-8'
+        return json.dumps(data, indent=indent).encode(encoding)
 
-    def get_indent(self, accepted_media_type):
-        media_type = MediaType(accepted_media_type)
-        indent = media_type.params.get('indent', '0')
-        indent = max(min(int(indent), 8), 0)
+    def get_indent(self, mimetype):
+        value = mimetype.params.get('indent', '0')
+        indent = max(min(int(value), 8), 0)
 
         if indent == 0:
             return None

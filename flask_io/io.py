@@ -227,13 +227,13 @@ class FlaskIO(object):
         if data is None:
             data = self.__app.response_class(status=204)
         elif not isinstance(data, self.__app.response_class):
-            renderer, media_type = self.content_negotiation.select_renderer(request, self.renderers)
+            renderer, mimetype = self.content_negotiation.select_renderer(request, self.renderers)
 
             if not renderer:
                 raise NotAcceptable()
 
-            data_bytes = renderer.render(data, media_type)
-            data = self.__app.response_class(data_bytes, mimetype=media_type)
+            data_bytes = renderer.render(data, mimetype)
+            data = self.__app.response_class(data_bytes, mimetype=mimetype.mimetype)
 
         if status is not None:
             data.status_code = status
@@ -319,13 +319,13 @@ class FlaskIO(object):
         if not request.data:
             raise BadRequest('Payload is missing.')
 
-        parser = self.content_negotiation.select_parser(request, self.parsers)
+        parser, mimetype = self.content_negotiation.select_parser(request, self.parsers)
 
         if not parser:
             raise UnsupportedMediaType('Content-Type is not supported: ' + request.headers['content-type'])
 
         try:
-            decoded_data = parser.parse(request.data)
+            decoded_data = parser.parse(request.data, mimetype)
         except:
             raise BadRequest('Invalid payload format.')
 

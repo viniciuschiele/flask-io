@@ -1,5 +1,5 @@
-def parse_media_type(media_type):
-    plist = media_type.split(';')
+def parse_mimetype(mimetype):
+    plist = mimetype.split(';')
 
     full_type = plist.pop(0).lower().strip()
     params = {}
@@ -12,10 +12,10 @@ def parse_media_type(media_type):
     return full_type, params
 
 
-class MediaType(object):
-    def __init__(self, media_type):
-        self.media_type = media_type
-        self.full_type, self.params = parse_media_type(media_type)
+class MimeType(object):
+    def __init__(self, mimetype):
+        self.mimetype = mimetype
+        self.full_type, self.params = parse_mimetype(mimetype)
         self.main_type, sep, self.sub_type = self.full_type.partition('/')
 
     def match(self, other):

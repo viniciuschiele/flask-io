@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from .mediatypes import MediaType
+from .mimetypes import MimeType
 
 
 class ContentNegotiation(metaclass=ABCMeta):
@@ -18,30 +18,30 @@ class DefaultContentNegotiation(ContentNegotiation):
         Gets the parser which matches to the request's content type.
         """
 
-        # If content_type is none or empty we just return
-        # the first parser.
+        # If content_type is none or empty we just return the first parser.
         if not request.content_type:
-            return parsers[0]
+            return parsers[0], parsers[0].mimetype
 
-        media_type = MediaType(request.content_type)
+        mimetype = MimeType(request.content_type)
 
         for parser in parsers:
-            if media_type.match(MediaType(parser.media_type)):
-                return parser
+            if mimetype.match(parser.mimetype):
+                return parser, mimetype
 
-        return None
+        return None, None
 
     def select_renderer(self, request, renderers):
         """
-        Gets the renderer which matches to the request's accept type.
+        Gets the renderer which matches to the request's accept.
         """
 
         if not len(request.accept_mimetypes):
-            return renderers[0], renderers[0].media_type
+            return renderers[0], renderers[0].mimetype
 
         for mimetype, quality in request.accept_mimetypes:
-            accept_media_type = MediaType(mimetype)
+            accept_mimetype = MimeType(mimetype)
             for renderer in renderers:
-                if accept_media_type.match(MediaType(renderer.media_type)):
-                    return renderer, accept_media_type
+                if accept_mimetype.match(renderer.mimetype):
+                    return renderer, accept_mimetype
+
         return None, None
