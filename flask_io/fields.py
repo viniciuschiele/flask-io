@@ -109,12 +109,26 @@ class Password(Field):
 
 
 class String(fields.String):
+    """
+    Extends Marshmallow String Field to add new features.
+    """
+
     default_error_messages = {
         'empty': 'Field may not be empty.',
         'only_numeric': 'Only numeric chars are allowed.'
     }
 
     def __init__(self, allow_empty=True, none_if_empty=False, strip=False, only_numeric=False, *args, **kwargs):
+        """
+        Initializes a new instance of 'String'.
+
+        :param bool allow_empty: Indicates whether the string can be empty ('').
+        :param bool none_if_empty: Indicates whether the empty ('') should be considered 'None'.
+        :param bool strip: Indicates whether the string should be trimmed.
+        :param bool only_numeric: Indicates whether the string should have only numbers
+        :return:
+        """
+
         super().__init__(*args, **kwargs)
         self.allow_empty = allow_empty
         self.strip = strip

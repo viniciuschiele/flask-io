@@ -1,6 +1,5 @@
 import functools
 
-from collections import OrderedDict
 from flask import request
 from inspect import isclass
 from logging import getLogger
@@ -76,7 +75,7 @@ class FlaskIO(object):
 
         :param data: The content value.
         :param schema: The schema to serialize the data.
-        :param data: The key used to envelope the data.
+        :param envelope: The key used to envelope the data.
         :return: A Flask response object.
         """
 
@@ -118,7 +117,7 @@ class FlaskIO(object):
 
         :param data: The content value.
         :param schema: The schema to serialize the data.
-        :param data: The key used to envelope the data.
+        :param envelope: The key used to envelope the data.
         :return: A Flask response object.
         """
 
@@ -139,6 +138,7 @@ class FlaskIO(object):
         A decorator that converts the request body into a function parameter based on the specified schema.
 
         :param param_name: The parameter which receives the argument.
+        :param schema: The schema class or instance used to deserialize the request body toa Python object.
         :return: A function
         """
 
@@ -156,7 +156,8 @@ class FlaskIO(object):
         """
         A decorator that converts a request cookie into a function parameter based on the specified field.
 
-        :param param_name: The parameter which receives the argument.
+        :param str param_name: The parameter which receives the argument.
+        :param Field field: The field class or instance used to deserialize the request cookie to a Python object.
         :return: A function
         """
 
@@ -166,7 +167,8 @@ class FlaskIO(object):
         """
         A decorator that converts a request form into a function parameter based on the specified field.
 
-        :param param_name: The parameter which receives the argument.
+        :param str param_name: The parameter which receives the argument.
+        :param Field field: The field class or instance used to deserialize the request form to a Python object.
         :return: A function
         """
         return self.__from_source(param_name, field, lambda: request.form, 'form')
@@ -175,7 +177,8 @@ class FlaskIO(object):
         """
         A decorator that converts a request header into a function parameter based on the specified field.
 
-        :param param_name: The parameter which receives the argument.
+        :param str param_name: The parameter which receives the argument.
+        :param Field field: The field class or instance used to deserialize the request header to a Python object.
         :return: A function
         """
         return self.__from_source(param_name, field, lambda: request.headers, 'header')
@@ -185,6 +188,7 @@ class FlaskIO(object):
         A decorator that converts a query string into a function parameter based on the specified field.
 
         :param param_name: The parameter which receives the argument.
+        :param Field field: The field class or instance used to deserialize the request query string to a Python object.
         :return: A function
         """
 

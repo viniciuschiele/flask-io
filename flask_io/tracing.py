@@ -1,5 +1,5 @@
 """
-Tracing classes.
+Logging for HTTP requests.
 """
 
 from collections import OrderedDict
@@ -13,7 +13,7 @@ class Tracer(object):
 
     def __init__(self, io):
         """
-        Initializes a new instance.
+        Initializes a new instance of 'Tracer'.
 
         :param io: A `FlaskIO` instance.
         """
@@ -27,9 +27,9 @@ class Tracer(object):
         """
         Adds a filter.
 
-        :param methods: The http methods to be filtered.
+        :param methods: The HTTP methods to be filtered.
         :param endpoints: The endpoints to be filtered.
-        :return:
+        :return Filter: The filter added.
         """
         if not methods and not endpoints:
             raise ValueError('Filter cannot be added with no criteria.')
@@ -40,7 +40,7 @@ class Tracer(object):
 
     def match(self, rule):
         """
-        Checks if the specified rule matches with any filter added.
+        Checks if the given rule matches with any filter added.
 
         :param rule: The Flask rule to be matched.
         :return: True if there is a filter that matches.
@@ -55,10 +55,10 @@ class Tracer(object):
 
     def trace(self, request, response, error, latency):
         """
-        Collects the data from the specified parameters and emit it.
+        Collects the data from the given parameters and emit it.
 
-        :param request: The Flask request object.
-        :param response: The Flask response object.
+        :param request: The Flask request.
+        :param response: The Flask response.
         :param error: The error occurred if any.
         :param latency: The time elapsed to process the request.
         """
@@ -69,6 +69,15 @@ class Tracer(object):
         self.emitter(data)
 
     def __collect_trace_data(self, request, response, error, latency):
+        """
+        Collects the tracing data from the given parameters.
+        :param request: The Flask request.
+        :param response: The flask response.
+        :param error: The error occurred if any.
+        :param latency: The time elapsed to process the request.
+        :return: The tracing data.
+        """
+
         data = OrderedDict()
         data['latency'] = latency.elapsed
         data['request_method'] = request.environ['REQUEST_METHOD']
@@ -88,6 +97,11 @@ class Tracer(object):
         return data
 
     def __default_emit_trace(self, data):
+        """
+        Writes the given tracing data to Python Logging.
+
+        :param data: The tracing data to be written.
+        """
         message = format_trace_data(data)
         self.io.logger.info(message)
 
@@ -99,7 +113,7 @@ class TraceFilter(object):
 
     def __init__(self, methods, endpoints):
         """
-        Initializes a new instance.
+        Initializes a new instance 'TraceFilter'.
 
         :param methods: HTTP methods to be filtered.
         :param endpoints: Endpoint names to be filtered.
@@ -110,7 +124,7 @@ class TraceFilter(object):
 
     def match(self, rule):
         """
-        Checks if the specified rule matches with the filter.
+        Checks if the given rule matches with the filter.
 
         :param rule: The Flask rule to be matched.
         :return: True if the filter matches.

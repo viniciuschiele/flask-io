@@ -1,24 +1,46 @@
+"""
+Content negotiation selects a appropriated parser and renderer for a HTTP request.
+"""
+
 from abc import ABCMeta, abstractmethod
 from .mimetypes import MimeType
 
 
 class ContentNegotiation(metaclass=ABCMeta):
+    """
+    Base class for all content negotiations.
+    """
+
     @abstractmethod
     def select_parser(self, request, parsers):
+        """
+        Selects the appropriated parser for the given request.
+        :param request: The HTTP request.
+        :param parsers: The lists of parsers.
+        :return: The parser selected or none.
+        """
         pass
 
     @abstractmethod
     def select_renderer(self, request, renderers):
+        """
+        Selects the appropriated renderer for the given request.
+        :param request: The HTTP request.
+        :param renderers: The lists of renderers.
+        :return: The renderer selected or none.
+        """
         pass
 
 
 class DefaultContentNegotiation(ContentNegotiation):
     def select_parser(self, request, parsers):
         """
-        Gets the parser which matches to the request's content type.
+        Selects the appropriated parser which matches to the request's content type.
+        :param request: The HTTP request.
+        :param parsers: The lists of parsers.
+        :return: The parser selected or none.
         """
 
-        # If content_type is none or empty we just return the first parser.
         if not request.content_type:
             return parsers[0], parsers[0].mimetype
 
@@ -32,7 +54,10 @@ class DefaultContentNegotiation(ContentNegotiation):
 
     def select_renderer(self, request, renderers):
         """
-        Gets the renderer which matches to the request's accept.
+        Selects the appropriated parser which matches to the request's accept.
+        :param request: The HTTP request.
+        :param renderers: The lists of parsers.
+        :return: The parser selected or none.
         """
 
         if not len(request.accept_mimetypes):
