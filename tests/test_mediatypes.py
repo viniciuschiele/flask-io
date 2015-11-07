@@ -39,10 +39,10 @@ class TestMimeType(TestCase):
         mimetype = MimeType('application/json;=utf-8;indent=')
 
         self.assertEqual(missing, mimetype.params.get('encoding', missing))
-        self.assertEqual('', mimetype.params['indent'])
+        self.assertEqual(missing, mimetype.params.get('indent', missing))
 
     def test_match(self):
         mimetype = MimeType('application/json')
         mimetype2 = MimeType('application/json ;encoding=utf-8')
         self.assertTrue(mimetype.match(mimetype2))
-        self.assertFalse(mimetype2.match(mimetype))
+        self.assertTrue(mimetype2.match(mimetype))

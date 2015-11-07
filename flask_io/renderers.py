@@ -50,8 +50,7 @@ class JSONRenderer(Renderer):
         :param MimeType mimetype: The mimetype with parameters.
         :return int: The indent if found, otherwise none.
         """
-        value = mimetype.params.get('indent', '0')
-        indent = max(min(int(value), 8), 0)
+        indent = max(int(mimetype.params.get('indent', '0')), 0)
 
         if indent == 0:
             return None

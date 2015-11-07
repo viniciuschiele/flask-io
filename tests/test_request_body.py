@@ -93,6 +93,15 @@ class TestRequestBody(TestCase):
         response = self.client.get('/resource', headers=headers)
         self.assertEqual(response.status_code, 406)
 
+    def test_accept_with_parameters(self):
+        @self.app.route('/resource', methods=['GET'])
+        def test():
+            return 'response'
+
+        headers = {'accept': 'application/json;indent=2'}
+        response = self.client.get('/resource', headers=headers)
+        self.assertEqual(response.status_code, 200)
+
 
 class User(object):
     def __init__(self, username, password):

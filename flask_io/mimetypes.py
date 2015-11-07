@@ -25,11 +25,6 @@ class MimeType(object):
         :param MimeType other: The MimeType to compare to.
         :return bool: True if this MimeType matches the given MediaType.
         """
-
-        for key in self.params.keys():
-            if other.params.get(key, None) != self.params.get(key, None):
-                return False
-
         if self.sub_type != '*' and other.sub_type != '*' and other.sub_type != self.sub_type:
             return False
 
@@ -51,7 +46,10 @@ class MimeType(object):
 
         for p in plist:
             kv = p.split('=')
-            if len(kv) == 2:
-                params[kv[0].strip()] = kv[1].strip()
+            if len(kv) != 2:
+                continue
+            v = kv[1].strip()
+            if v:
+                params[kv[0].strip()] = v
 
         return full_type, params
