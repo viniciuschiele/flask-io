@@ -113,12 +113,17 @@ class String(fields.String):
     Extends Marshmallow String Field to add new features.
     """
 
+    allow_empty = True
+    none_if_empty = False
+    strip = False
+    only_numeric = False
+
     default_error_messages = {
         'empty': 'Field may not be empty.',
         'only_numeric': 'Only numeric chars are allowed.'
     }
 
-    def __init__(self, allow_empty=True, none_if_empty=False, strip=False, only_numeric=False, *args, **kwargs):
+    def __init__(self, allow_empty=None, none_if_empty=None, strip=None, only_numeric=None, *args, **kwargs):
         """
         Initializes a new instance of 'String'.
 
@@ -130,10 +135,10 @@ class String(fields.String):
         """
 
         super().__init__(*args, **kwargs)
-        self.allow_empty = allow_empty
-        self.strip = strip
-        self.none_if_empty = none_if_empty
-        self.only_numeric = only_numeric
+        self.allow_empty = self.allow_empty if allow_empty is None else allow_empty
+        self.strip = self.strip if strip is None else strip
+        self.none_if_empty = self.none_if_empty if none_if_empty is None else none_if_empty
+        self.only_numeric = self.only_numeric if only_numeric is None else only_numeric
 
     def _deserialize(self, value, attr, data):
         value = super()._deserialize(value, attr, data)
