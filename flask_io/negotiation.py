@@ -33,6 +33,11 @@ class ContentNegotiation(metaclass=ABCMeta):
 
 
 class DefaultContentNegotiation(ContentNegotiation):
+    """
+    Selects a parser by request content type and a
+    renderer by request accept.
+    """
+
     def select_parser(self, request, parsers):
         """
         Selects the appropriated parser which matches to the request's content type.

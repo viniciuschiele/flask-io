@@ -1,6 +1,13 @@
 Changelog
 ---------
 
+1.8.0
+++++++++++++++++++
+- Added String field
+- Added a new customizable layer called Content Negotiation to selection of Parser and Renderer
+- Added support to parameters on Content-Type and Accept headers
+- Improved Enum field performance.
+- Removed Encoders and Decoders in favor of Parser and Renderer
 1.7.0
 ++++++++++++++++++
 - Apache Licence has been replaced for MIT Licence
