@@ -1,14 +1,16 @@
-import flask_io
-
 from setuptools import setup
+
+__version__ = '1.8.1'
+__author__ = 'Vinicius Chiele'
+__license__ = 'MIT'
 
 setup(
     name='flask-io',
-    version=flask_io.__version__,
+    version=__version__,
     packages=['flask_io'],
     url='https://github.com/viniciuschiele/flask-io',
-    license=flask_io.__license__,
-    author=flask_io.__version__,
+    license=__license__,
+    author=__version__,
     author_email='vinicius.chiele@gmail.com',
     description='Flask-IO is a library for parsing Flask request arguments into parameters and for serialization of complex objects into Flask response.',
     keywords=['flask', 'rest', 'parse', 'encode', 'decode', 'request', 'json', 'marshmallow'],
