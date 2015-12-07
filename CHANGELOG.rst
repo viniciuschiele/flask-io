@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.8.2
+++++++++++++++++++
+- Update marshmallow to the version 2.4.0
+
 1.8.1
 ++++++++++++++++++
 - Fixed issue that prevented installing the library
