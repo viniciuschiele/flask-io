@@ -4,7 +4,7 @@ from flask import request
 from inspect import isclass
 from logging import getLogger
 from werkzeug.exceptions import BadRequest, HTTPException, NotAcceptable, UnsupportedMediaType
-from . import fields, missing, ValidationError
+from . import errors, fields, missing, ValidationError
 from .negotiation import DefaultContentNegotiation
 from .parsers import JSONParser
 from .renderers import JSONRenderer
@@ -26,6 +26,7 @@ class FlaskIO(object):
 
         self.__app = None
 
+        self.default_authentication = None
         self.content_negotiation = DefaultContentNegotiation()
         self.parsers = [JSONParser()]
         self.renderers = [JSONRenderer()]
@@ -214,6 +215,14 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
+    def authentication(self, auth):
+        auth = auth() if isclass(auth) else auth
+
+        def decorator(func):
+            func.authentication = auth
+            return func
+        return decorator
+
     def make_response(self, data):
         """
         Creates a Flask response object from the specified data.
@@ -266,6 +275,23 @@ class FlaskIO(object):
             return f
         return decorator
 
+    def __authenticate(self, func):
+        authentication = self.default_authentication
+
+        if hasattr(func, 'authentication'):
+            authentication = func.authentication
+
+        if not authentication:
+            return
+
+        auth_tuple = authentication.authenticate(request)
+
+        if not auth_tuple:
+            raise errors.UnauthorizedError()
+
+        request.user = auth_tuple[0]
+        request.auth = auth_tuple[1]
+
     def __from_source(self, param_name, field, getter_data, location):
         field = field() if isclass(field) else field
         if not field.required:
@@ -282,18 +308,21 @@ class FlaskIO(object):
     def __handle_error(self, e):
         if isinstance(e, HTTPException):
             code = e.code
-            error = getattr(e, 'description', http_status_message(code))
+            error = e.description or http_status_message(code)
         elif isinstance(e, ValidationError):
             code = 400
             error = validation_error_to_errors(e)
+        elif isinstance(e, errors.APIError):
+            code = e.status_code
+            error = e.error
         else:
             code = 500
             error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
             self.logger.error(str(e))
 
-        errors = errors_to_dict(error)
+        errors_data = errors_to_dict(error)
 
-        return self.make_response((errors, code))
+        return self.make_response((errors_data, code))
 
     def __parse_field(self, field_name, field, data, location):
         field.allow_none = True
@@ -348,6 +377,8 @@ class FlaskIO(object):
                 latency = Stopwatch.start_new()
 
             try:
+                self.__authenticate(func)
+
                 response = func(**kwargs)
                 response = self.make_response(response)
                 return response

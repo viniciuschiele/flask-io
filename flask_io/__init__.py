@@ -3,4 +3,4 @@ from marshmallow import pre_load, pre_dump, post_load, post_dump, Schema, Valida
 from marshmallow.utils import missing
 
 from .io import FlaskIO
-from .utils import Error
+from .errors import Error
