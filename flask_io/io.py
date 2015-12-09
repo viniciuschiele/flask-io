@@ -27,6 +27,7 @@ class FlaskIO(object):
         self.__app = None
 
         self.default_authentication = None
+        self.default_permissions = None
         self.content_negotiation = DefaultContentNegotiation()
         self.parsers = [JSONParser()]
         self.renderers = [JSONRenderer()]
@@ -223,6 +224,12 @@ class FlaskIO(object):
             return func
         return decorator
 
+    def permissions(self, perms):
+        def decorator(func):
+            func.permissions = perms
+            return func
+        return decorator
+
     def make_response(self, data):
         """
         Creates a Flask response object from the specified data.
@@ -284,6 +291,9 @@ class FlaskIO(object):
         if not authentication:
             return
 
+        request.user = None
+        request.auth = None
+
         auth_tuple = authentication.authenticate(request)
 
         if not auth_tuple:
@@ -291,6 +301,21 @@ class FlaskIO(object):
 
         request.user = auth_tuple[0]
         request.auth = auth_tuple[1]
+
+    def __authorize(self, func):
+        permissions = self.default_permissions
+
+        if hasattr(func, 'permissions'):
+            permissions = func.permissions
+
+        if not permissions:
+            return
+
+        for permission in permissions:
+            if permission.has_permission():
+                break
+        else:
+            raise errors.ForbiddenError()
 
     def __from_source(self, param_name, field, getter_data, location):
         field = field() if isclass(field) else field

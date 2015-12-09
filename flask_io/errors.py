@@ -25,6 +25,11 @@ class APIError(Exception):
             self.error = error
 
 
+class ForbiddenError(APIError):
+    status_code = 403
+    error = Error('You do not have permission to access.', 'forbidden')
+
+
 class UnauthorizedError(APIError):
     status_code = 401
     error = Error('Access is denied due to invalid credentials.', 'invalid_credentials')
