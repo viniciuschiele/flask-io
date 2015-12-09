@@ -16,10 +16,3 @@ class Permission(metaclass=ABCMeta):
         Return `True` if permission is granted, `False` otherwise.
         """
         pass
-
-    @abstractmethod
-    def has_object_permission(self, obj):
-        """
-        Return `True` if permission is granted, `False` otherwise.
-        """
-        pass
