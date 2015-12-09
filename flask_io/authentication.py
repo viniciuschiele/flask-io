@@ -7,7 +7,7 @@ class Authentication(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def authenticate(self, request):
+    def authenticate(self):
         """
         Authenticate the request and return a two-tuple of (user, token).
         """

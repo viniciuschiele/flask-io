@@ -294,7 +294,7 @@ class FlaskIO(object):
         request.user = None
         request.auth = None
 
-        auth_tuple = authentication.authenticate(request)
+        auth_tuple = authentication.authenticate()
 
         if not auth_tuple:
             raise errors.UnauthorizedError()
