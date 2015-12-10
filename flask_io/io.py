@@ -157,6 +157,9 @@ class FlaskIO(object):
         :return: A function
         """
 
+        if not isinstance(permission_classes, (list, tuple)):
+            permission_classes = [permission_classes]
+
         def decorator(func):
             func.permissions = permission_classes
             return func

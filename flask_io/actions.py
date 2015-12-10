@@ -75,7 +75,7 @@ class Action(object):
             return
 
         for permission in permissions:
-            if not permission().has_permission():
+            if not permission.has_permission():
                 if request.user:
                     raise errors.PermissionDenied()
                 else:
