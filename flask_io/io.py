@@ -3,8 +3,9 @@ import functools
 from flask import request
 from inspect import isclass
 from logging import getLogger
-from werkzeug.exceptions import BadRequest, HTTPException, NotAcceptable, UnsupportedMediaType
-from . import errors, fields, missing, ValidationError
+from . import fields, missing, ValidationError
+from .actions import Action
+from .errors import BadRequest, NotAcceptable, UnsupportedMediaType
 from .negotiation import DefaultContentNegotiation
 from .parsers import JSONParser
 from .renderers import JSONRenderer
@@ -59,7 +60,7 @@ class FlaskIO(object):
         :return: A Flask response object.
         """
 
-        return self.make_response((errors_to_dict(error), 400))
+        return self.__make_response((errors_to_dict(error), 400))
 
     def conflict(self, error):
         """
@@ -69,7 +70,7 @@ class FlaskIO(object):
         :return: A Flask response object.
         """
 
-        return self.make_response((errors_to_dict(error), 409))
+        return self.__make_response((errors_to_dict(error), 409))
 
     def created(self, data, schema=None, envelope=None):
         """
@@ -82,7 +83,7 @@ class FlaskIO(object):
         """
 
         data = marshal(data, schema, envelope)
-        return self.make_response((data, 201))
+        return self.__make_response((data, 201))
 
     def forbidden(self, error):
         """
@@ -92,7 +93,7 @@ class FlaskIO(object):
         :return: A Flask response object.
         """
 
-        return self.make_response((errors_to_dict(error), 403))
+        return self.__make_response((errors_to_dict(error), 403))
 
     def no_content(self):
         """
@@ -101,7 +102,7 @@ class FlaskIO(object):
         :return: A Flask response object.
         """
 
-        return self.make_response((None, 204))
+        return self.__make_response((None, 204))
 
     def not_found(self, error):
         """
@@ -111,7 +112,7 @@ class FlaskIO(object):
         :return: A Flask response object.
         """
 
-        return self.make_response((errors_to_dict(error), 404))
+        return self.__make_response((errors_to_dict(error), 404))
 
     def ok(self, data, schema=None, envelope=None):
         """
@@ -124,7 +125,7 @@ class FlaskIO(object):
         """
 
         data = marshal(data, schema, envelope)
-        return self.make_response(data)
+        return self.__make_response(data)
 
     def unauthorized(self, error):
         """
@@ -133,7 +134,33 @@ class FlaskIO(object):
         :param error: The error to include in the response.
         :return: A Flask response object.
         """
-        return self.make_response((errors_to_dict(error), 401))
+        return self.__make_response((errors_to_dict(error), 401))
+
+    def authentication(self, authentication_class):
+        """
+        A decorator that sets a authentication class for a function.
+
+        :param authentication_class: The authentication class.
+        :return: A function
+        """
+
+        def decorator(func):
+            func.authentication = authentication_class
+            return func
+        return decorator
+
+    def permissions(self, permission_classes):
+        """
+        A decorator that sets a list of permission classes for a function.
+
+        :param permission_classes: The list of permission classes.
+        :return: A function
+        """
+
+        def decorator(func):
+            func.permissions = permission_classes
+            return func
+        return decorator
 
     def from_body(self, param_name, schema):
         """
@@ -216,53 +243,6 @@ class FlaskIO(object):
             return wrapper
         return decorator
 
-    def authentication(self, auth):
-        auth = auth() if isclass(auth) else auth
-
-        def decorator(func):
-            func.authentication = auth
-            return func
-        return decorator
-
-    def permissions(self, perms):
-        def decorator(func):
-            func.permissions = perms
-            return func
-        return decorator
-
-    def make_response(self, data):
-        """
-        Creates a Flask response object from the specified data.
-        The appropriated encoder is taken based on the request header Accept.
-        If there is not data to be serialized the response status code is 204.
-
-        :param data: The Python object to be serialized.
-        :return: A Flask response object.
-        """
-
-        status = headers = None
-        if isinstance(data, tuple):
-            data, status, headers = unpack(data)
-
-        if data is None:
-            data = self.__app.response_class(status=204)
-        elif not isinstance(data, self.__app.response_class):
-            renderer, mimetype = self.content_negotiation.select_renderer(request, self.renderers)
-
-            if not renderer:
-                raise NotAcceptable()
-
-            data_bytes = renderer.render(data, mimetype)
-            data = self.__app.response_class(data_bytes, mimetype=mimetype.mimetype)
-
-        if status is not None:
-            data.status_code = status
-
-        if headers:
-            data.headers.extend(headers)
-
-        return data
-
     def trace_inspect(self):
         """
         A decorator that allows to inspect/change the trace data.
@@ -282,40 +262,42 @@ class FlaskIO(object):
             return f
         return decorator
 
-    def __authenticate(self, func):
-        authentication = self.default_authentication
+    def __make_response(self, data, default_renderer=None):
+        """
+        Creates a Flask response object from the specified data.
+        The appropriated encoder is taken based on the request header Accept.
+        If there is not data to be serialized the response status code is 204.
 
-        if hasattr(func, 'authentication'):
-            authentication = func.authentication
+        :param data: The Python object to be serialized.
+        :return: A Flask response object.
+        """
 
-        if not authentication:
-            return
+        status = headers = None
+        if isinstance(data, tuple):
+            data, status, headers = unpack(data)
 
-        request.user = None
-        request.auth = None
+        if data is None:
+            data = self.__app.response_class(status=204)
+        elif not isinstance(data, self.__app.response_class):
+            renderer, mimetype = self.content_negotiation.select_renderer(request, self.renderers)
 
-        auth_tuple = authentication.authenticate()
+            if not renderer:
+                if not default_renderer:
+                    raise NotAcceptable()
 
-        if not auth_tuple:
-            raise errors.UnauthorizedError()
+                renderer = default_renderer
+                mimetype = default_renderer.mimetype
 
-        request.user = auth_tuple[0]
-        request.auth = auth_tuple[1]
+            data_bytes = renderer.render(data, mimetype)
+            data = self.__app.response_class(data_bytes, mimetype=mimetype.mimetype)
 
-    def __authorize(self, func):
-        permissions = self.default_permissions
+        if status is not None:
+            data.status_code = status
 
-        if hasattr(func, 'permissions'):
-            permissions = func.permissions
+        if headers:
+            data.headers.extend(headers)
 
-        if not permissions:
-            return
-
-        for permission in permissions:
-            if permission.has_permission():
-                break
-        else:
-            raise errors.ForbiddenError()
+        return data
 
     def __from_source(self, param_name, field, getter_data, location):
         field = field() if isclass(field) else field
@@ -331,10 +313,7 @@ class FlaskIO(object):
         return decorator
 
     def __handle_error(self, e):
-        if isinstance(e, HTTPException):
-            code = e.code
-            error = e.description or http_status_message(code)
-        elif isinstance(e, ValidationError):
+        if isinstance(e, ValidationError):
             code = 400
             error = validation_error_to_errors(e)
         elif isinstance(e, errors.APIError):
@@ -347,7 +326,7 @@ class FlaskIO(object):
 
         errors_data = errors_to_dict(error)
 
-        return self.make_response((errors_data, code))
+        return self.__make_response((errors_data, code), self.renderers[0])
 
     def __parse_field(self, field_name, field, data, location):
         field.allow_none = True
@@ -375,17 +354,17 @@ class FlaskIO(object):
 
     def __parse_body(self, schema):
         if not request.data:
-            raise BadRequest('Payload is missing.')
+            raise BadRequest('Payload missing.')
 
         parser, mimetype = self.content_negotiation.select_parser(request, self.parsers)
 
         if not parser:
-            raise UnsupportedMediaType('Content-Type is not supported: ' + request.headers['content-type'])
+            raise UnsupportedMediaType(request.headers['content-type'])
 
         try:
             decoded_data = parser.parse(request.data, mimetype)
         except:
-            raise BadRequest('Invalid payload format.')
+            raise BadRequest('Malformed request.')
 
         model, errors = schema.load(decoded_data)
 
@@ -394,25 +373,23 @@ class FlaskIO(object):
 
         return model
 
-    def __process_request(self, func, should_trace):
+    def __process_action(self, action):
         def decorator(**kwargs):
             latency = response = error = None
 
-            if should_trace and self.tracer.enabled:
+            if action.trace_enabled and self.tracer.enabled:
                 latency = Stopwatch.start_new()
 
             try:
-                self.__authenticate(func)
-
-                response = func(**kwargs)
-                response = self.make_response(response)
+                response = action(**kwargs)
+                response = self.__make_response(response)
                 return response
             except Exception as e:
                 error = e
                 response = self.__handle_error(e)
                 return response
             finally:
-                if should_trace and self.tracer.enabled:
+                if action.trace_enabled and self.tracer.enabled:
                     latency.stop()
                     self.tracer.trace(request, response, error, latency)
 
@@ -420,12 +397,16 @@ class FlaskIO(object):
 
     def __setup(self):
         for endpoint in self.__app.view_functions.keys():
-            should_trace = False
-
             for rule in self.__app.url_map.iter_rules(endpoint):
                 if self.tracer.match(rule):
-                    should_trace = True
+                    trace_enabled = True
                     break
+            else:
+                trace_enabled = False
 
-            self.__app.view_functions[endpoint] = \
-                self.__process_request(self.__app.view_functions[endpoint], should_trace)
+            action = Action(self.__app.view_functions[endpoint],
+                            self.default_authentication,
+                            self.default_permissions,
+                            trace_enabled)
+
+            self.__app.view_functions[endpoint] = self.__process_action(action)

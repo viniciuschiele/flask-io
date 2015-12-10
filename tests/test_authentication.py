@@ -1,5 +1,5 @@
 from flask import Flask, request
-from flask_io import FlaskIO
+from flask_io import FlaskIO, errors
 from flask_io.authentication import Authentication
 from unittest import TestCase
 
@@ -32,5 +32,5 @@ class TestAuthorization(TestCase):
 class TokenAuthentication(Authentication):
     def authenticate(self):
         if request.headers.get('Authorization') is None:
-            return None
+            raise errors.AuthenticationFailed()
         return 'user', 'auth'

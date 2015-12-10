@@ -1,9 +1,13 @@
+"""
+Provides various authentication policies.
+"""
+
 from abc import ABCMeta, abstractmethod
 
 
 class Authentication(metaclass=ABCMeta):
     """
-    All authentication classes should extend Authentication.
+    A base class from which all authentication classes should inherit.
     """
 
     @abstractmethod
