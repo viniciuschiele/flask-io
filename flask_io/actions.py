@@ -75,10 +75,8 @@ class Action(object):
             return
 
         for permission in permissions:
-            if permission().has_permission():
-                break
-        else:
-            if request.user:
-                raise errors.PermissionDenied()
-            else:
-                raise errors.NotAuthenticated()
+            if not permission().has_permission():
+                if request.user:
+                    raise errors.PermissionDenied()
+                else:
+                    raise errors.NotAuthenticated()

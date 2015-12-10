@@ -5,7 +5,7 @@ from inspect import isclass
 from logging import getLogger
 from . import fields, missing, ValidationError
 from .actions import Action
-from .errors import BadRequest, NotAcceptable, UnsupportedMediaType
+from .errors import APIError, BadRequest, NotAcceptable, UnsupportedMediaType
 from .negotiation import DefaultContentNegotiation
 from .parsers import JSONParser
 from .renderers import JSONRenderer
@@ -316,7 +316,7 @@ class FlaskIO(object):
         if isinstance(e, ValidationError):
             code = 400
             error = validation_error_to_errors(e)
-        elif isinstance(e, errors.APIError):
+        elif isinstance(e, APIError):
             code = e.status_code
             error = e.error
         else:
