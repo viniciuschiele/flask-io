@@ -13,7 +13,7 @@ class TestAuthorization(TestCase):
 
     def test_with_token(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.authentication(TokenAuthentication)
+        @self.io.authentications(TokenAuthentication)
         def test():
             pass
 
@@ -22,7 +22,7 @@ class TestAuthorization(TestCase):
 
     def test_missing_token(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.authentication(TokenAuthentication)
+        @self.io.authentications(TokenAuthentication)
         def test():
             pass
         response = self.client.get('/resource')

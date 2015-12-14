@@ -27,8 +27,8 @@ class FlaskIO(object):
 
         self.__app = None
 
-        self.default_authentication = None
-        self.default_permissions = None
+        self.default_authentications = []
+        self.default_permissions = []
         self.content_negotiation = DefaultContentNegotiation()
         self.parsers = [JSONParser()]
         self.renderers = [JSONRenderer()]
@@ -136,32 +136,51 @@ class FlaskIO(object):
         """
         return self.__make_response((errors_to_dict(error), 401))
 
-    def authentication(self, authentication_class):
+    def authentications(self, auths):
         """
         A decorator that sets a authentication class for a function.
 
-        :param authentication_class: The authentication class.
+        :param auths: The list of authentication instances or classes.
         :return: A function
         """
 
+        if not isinstance(auths, (list, tuple)):
+            auths = [auths]
+
+        instances = []
+
+        for auth in auths:
+            if isclass(auth):
+                instances.append(auth())
+            else:
+                instances.append(auth)
+
         def decorator(func):
-            func.authentication = authentication_class
+            func.authentications = instances
             return func
         return decorator
 
-    def permissions(self, permission_classes):
+    def permissions(self, perms):
         """
         A decorator that sets a list of permission classes for a function.
 
-        :param permission_classes: The list of permission classes.
+        :param perms: The list of permission instances or classes.
         :return: A function
         """
 
-        if not isinstance(permission_classes, (list, tuple)):
-            permission_classes = [permission_classes]
+        if not isinstance(perms, (list, tuple)):
+            perms = [perms]
+
+        instances = []
+
+        for perm in perms:
+            if isclass(perm):
+                instances.append(perm())
+            else:
+                instances.append(perm)
 
         def decorator(func):
-            func.permissions = permission_classes
+            func.permissions = perms
             return func
         return decorator
 
@@ -265,6 +284,22 @@ class FlaskIO(object):
             return f
         return decorator
 
+    def __handle_error(self, e):
+        if isinstance(e, ValidationError):
+            code = 400
+            error = validation_error_to_errors(e)
+        elif isinstance(e, APIError):
+            code = e.status_code
+            error = e.error
+        else:
+            code = 500
+            error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
+            self.logger.error(str(e))
+
+        errors_data = errors_to_dict(error)
+
+        return self.__make_response((errors_data, code), self.renderers[0])
+
     def __make_response(self, data, default_renderer=None):
         """
         Creates a Flask response object from the specified data.
@@ -314,22 +349,6 @@ class FlaskIO(object):
                 return func(*args, **kwargs)
             return wrapper
         return decorator
-
-    def __handle_error(self, e):
-        if isinstance(e, ValidationError):
-            code = 400
-            error = validation_error_to_errors(e)
-        elif isinstance(e, APIError):
-            code = e.status_code
-            error = e.error
-        else:
-            code = 500
-            error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
-            self.logger.error(str(e))
-
-        errors_data = errors_to_dict(error)
-
-        return self.__make_response((errors_data, code), self.renderers[0])
 
     def __parse_field(self, field_name, field, data, location):
         field.allow_none = True
@@ -408,7 +427,7 @@ class FlaskIO(object):
                 trace_enabled = False
 
             action = Action(self.__app.view_functions[endpoint],
-                            self.default_authentication,
+                            self.default_authentications,
                             self.default_permissions,
                             trace_enabled)
 

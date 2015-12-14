@@ -7,12 +7,12 @@ from flask_io import errors
 
 
 class Action(object):
-    def __init__(self, func, default_authentication, default_permissions, trace_enabled):
+    def __init__(self, func, default_authentications, default_permissions, trace_enabled):
         self.func = func
 
-        self.authentication = default_authentication
-        if hasattr(func, 'authentication'):
-            self.authentication = func.authentication
+        self.authentications = default_authentications
+        if hasattr(func, 'authentications'):
+            self.authentications = func.authentications
 
         self.permissions = default_permissions
         if hasattr(func, 'permissions'):
@@ -26,42 +26,24 @@ class Action(object):
 
         return self.func(*args, **kwargs)
 
-    def get_authenticator(self):
-        """
-        Instantiates and returns the list of authenticators that this view can use.
-        """
-        if self.authentication:
-            return self.authentication()
-
-        return None
-
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if not self.permissions:
-            return []
-
-        return [permission() for permission in self.permissions]
-
     def perform_authentication(self):
         """
         Perform authentication on the incoming request.
         """
 
+        if not self.authentications:
+            return
+
         request.user = None
         request.auth = None
 
-        authenticator = self.get_authenticator()
+        for authentications in self.authentications:
+            auth_tuple = authentications.authenticate()
 
-        if not authenticator:
-            return
-
-        auth_tuple = authenticator.authenticate()
-
-        if auth_tuple:
-            request.user = auth_tuple[0]
-            request.auth = auth_tuple[1]
+            if auth_tuple:
+                request.user = auth_tuple[0]
+                request.auth = auth_tuple[1]
+                break
 
     def perform_authorization(self):
         """
@@ -69,12 +51,7 @@ class Action(object):
         Raises an appropriate exception if the request is not permitted.
         """
 
-        permissions = self.get_permissions()
-
-        if not permissions:
-            return
-
-        for permission in permissions:
+        for permission in self.permissions:
             if not permission.has_permission():
                 if request.user:
                     raise errors.PermissionDenied()
