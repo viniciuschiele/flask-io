@@ -28,11 +28,11 @@ class FlaskIO(object):
 
         self.__app = None
 
-        self.default_authentications = []
-        self.default_permissions = []
         self.content_negotiation = DefaultContentNegotiation()
-        self.parsers = [JSONParser()]
-        self.renderers = [JSONRenderer()]
+        self.default_authenticators = []
+        self.default_permissions = []
+        self.default_parsers = [JSONParser()]
+        self.default_renderers = [JSONRenderer()]
 
         self.logger = getLogger('flask-io')
 
@@ -137,11 +137,11 @@ class FlaskIO(object):
         """
         return self.__make_response((errors_to_dict(error), 401))
 
-    def authentications(self, auths):
+    def authenticators(self, auths):
         """
-        A decorator that sets a authentication class for a function.
+        A decorator that sets a list of authenticators for a function.
 
-        :param auths: The list of authentication instances or classes.
+        :param auths: The list of authenticator instances or classes.
         :return: A function
         """
 
@@ -157,13 +157,13 @@ class FlaskIO(object):
                 instances.append(auth)
 
         def decorator(func):
-            func.authentications = instances
+            func.authenticators = instances
             return func
         return decorator
 
     def permissions(self, perms):
         """
-        A decorator that sets a list of permission classes for a function.
+        A decorator that sets a list of permissions for a function.
 
         :param perms: The list of permission instances or classes.
         :return: A function
@@ -315,7 +315,7 @@ class FlaskIO(object):
 
         errors_data = errors_to_dict(error)
 
-        return self.__make_response((errors_data, code), self.renderers[0])
+        return self.__make_response((errors_data, code), self.default_renderers[0])
 
     def __make_response(self, data, default_renderer=None):
         """
@@ -334,7 +334,7 @@ class FlaskIO(object):
         if data is None:
             data = self.__app.response_class(status=204)
         elif not isinstance(data, self.__app.response_class):
-            renderer, mimetype = self.content_negotiation.select_renderer(request, self.renderers)
+            renderer, mimetype = self.content_negotiation.select_renderer(request, self.default_renderers)
 
             if not renderer:
                 if not default_renderer:
@@ -395,7 +395,7 @@ class FlaskIO(object):
         if not request.data:
             raise BadRequest('Payload missing.')
 
-        parser, mimetype = self.content_negotiation.select_parser(request, self.parsers)
+        parser, mimetype = self.content_negotiation.select_parser(request, self.default_parsers)
 
         if not parser:
             raise UnsupportedMediaType(request.headers['content-type'])
@@ -444,7 +444,7 @@ class FlaskIO(object):
                 trace_enabled = False
 
             action = Action(self.__app.view_functions[endpoint],
-                            self.default_authentications,
+                            self.default_authenticators,
                             self.default_permissions,
                             trace_enabled)
 
