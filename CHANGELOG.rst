@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.9.1
+++++++++++++++++++
+- Add error handle to http exception.
+
 1.9.0
 ++++++++++++++++++
 - Add support for 'fields' parameter, it allows to select which fields should be returned by the api.
