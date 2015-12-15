@@ -1,28 +1,35 @@
 Changelog
 ---------
 
+1.9.0
+++++++++++++++++++
+- Add support for 'fields' parameter, it allows to select which fields should be returned by the api.
+- Add support for multiple authentications
+- Add support for authorization based on permissions.
+- Update marshmallow to the version 2.4.2
+
 1.8.2
 ++++++++++++++++++
 - Update marshmallow to the version 2.4.0
 
 1.8.1
 ++++++++++++++++++
-- Fixed issue that prevented installing the library
+- Fix issue that prevented installing the library
 
 1.8.0
 ++++++++++++++++++
-- Added String field
-- Added a new customizable layer called Content Negotiation to selection of Parser and Renderer
-- Added support to parameters on Content-Type and Accept headers
-- Improved Enum field performance.
-- Removed Encoders and Decoders in favor of Parser and Renderer
+- Add String field
+- Add a new customizable layer called Content Negotiation to selection of Parser and Renderer
+- Add support to parameters on Content-Type and Accept headers
+- Improve Enum field performance.
+- Remove Encoders and Decoders in favor of Parser and Renderer
 
 1.7.0
 ++++++++++++++++++
 - Apache Licence has been replaced for MIT Licence
-- Added method 'created' into FlaskIO class
-- Made pre_load and pre_dump decorators importable from flask-io
-- Updated marshmallow to the version 2.2.0
+- Add method 'created' into FlaskIO class
+- Make pre_load and pre_dump decorators importable from flask-io
+- Update marshmallow to the version 2.2.0
 
 1.6.0
 ++++++++++++++++++
@@ -34,21 +41,21 @@ Changelog
 
 1.5.0
 ++++++++++++++++++
-- Changed error response to wrap the list of errors into an attribute 'errors'
-- Added extra arguments to the error class
-- Refactored/Simplified the core
-- Removed trace stuff (a new one will be released)
+- Change error response to wrap the list of errors into an attribute 'errors'
+- Add extra arguments to the error class
+- Refactor/Simplify the core
+- Remove trace stuff (a new one will be released)
 
 1.4.1
 ++++++++++++++++++
-- Bug fixed in the Enum field
+- Bug fix in the Enum field
 
 1.4.0
 ++++++++++++++++++
-- Renamed module fields_ext to fields
-- Added Complexity validator
-- Added Password field
-- Updated Marshmallow to 2.1.0
+- Rename module fields_ext to fields
+- Add Complexity validator
+- Add Password field
+- Update Marshmallow to 2.1.0
  
 1.3.3
 ++++++++++++++++++
