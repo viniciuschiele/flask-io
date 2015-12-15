@@ -7,12 +7,12 @@ from flask_io import errors
 
 
 class Action(object):
-    def __init__(self, func, default_authentications, default_permissions, trace_enabled):
+    def __init__(self, func, default_authenticators, default_permissions, trace_enabled):
         self.func = func
 
-        self.authentications = default_authentications
-        if hasattr(func, 'authentications'):
-            self.authentications = func.authentications
+        self.authenticators = default_authenticators
+        if hasattr(func, 'authenticators'):
+            self.authenticators = func.authenticators
 
         self.permissions = default_permissions
         if hasattr(func, 'permissions'):
@@ -31,14 +31,14 @@ class Action(object):
         Perform authentication on the incoming request.
         """
 
-        if not self.authentications:
+        if not self.authenticators:
             return
 
         request.user = None
         request.auth = None
 
-        for authentications in self.authentications:
-            auth_tuple = authentications.authenticate()
+        for authenticator in self.authenticators:
+            auth_tuple = authenticator.authenticate()
 
             if auth_tuple:
                 request.user = auth_tuple[0]

@@ -5,9 +5,9 @@ Provides various authentication policies.
 from abc import ABCMeta, abstractmethod
 
 
-class Authentication(metaclass=ABCMeta):
+class Authenticator(metaclass=ABCMeta):
     """
-    A base class from which all authentication classes should inherit.
+    A base class from which all authenticator classes should inherit.
     """
 
     @abstractmethod

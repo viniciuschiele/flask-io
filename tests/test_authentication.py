@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_io import FlaskIO, errors
-from flask_io.authentication import Authentication
+from flask_io.authentication import Authenticator
 from unittest import TestCase
 
 
@@ -13,7 +13,7 @@ class TestAuthorization(TestCase):
 
     def test_with_token(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.authentications(TokenAuthentication)
+        @self.io.authenticators(TokenAuthenticator)
         def test():
             pass
 
@@ -22,14 +22,14 @@ class TestAuthorization(TestCase):
 
     def test_missing_token(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.authentications(TokenAuthentication)
+        @self.io.authenticators(TokenAuthenticator)
         def test():
             pass
         response = self.client.get('/resource')
         self.assertEqual(response.status_code, 401)
 
 
-class TokenAuthentication(Authentication):
+class TokenAuthenticator(Authenticator):
     def authenticate(self):
         if request.headers.get('Authorization') is None:
             raise errors.AuthenticationFailed()
