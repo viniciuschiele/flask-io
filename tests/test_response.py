@@ -1,6 +1,6 @@
 import json
 
-from flask import Flask
+from flask import Flask, abort
 from flask_io import fields, FlaskIO, Error, Schema
 from unittest import TestCase
 
@@ -83,6 +83,15 @@ class TestResponseStatus(TestCase):
 
         self.assertEqual('foo', users_data.get('username'))
         self.assertIsNone(users_data.get('password'))
+
+    def test_http_exception(self):
+        @self.app.route('/resource', methods=['GET'])
+        def test():
+            abort(401)
+
+        response = self.client.get('/resource')
+
+        self.assertEqual(401, response.status_code)
 
 
 class UserSchema(Schema):

@@ -3,6 +3,7 @@ import functools
 from flask import request
 from inspect import isclass
 from logging import getLogger
+from werkzeug.exceptions import HTTPException
 from . import fields, missing, ValidationError
 from .actions import Action
 from .errors import APIError, BadRequest, NotAcceptable, UnsupportedMediaType
@@ -308,6 +309,9 @@ class FlaskIO(object):
         elif isinstance(e, APIError):
             code = e.status_code
             error = e.error
+        elif isinstance(e, HTTPException):
+            code = e.code
+            error = getattr(e, 'description', http_status_message(code))
         else:
             code = 500
             error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
