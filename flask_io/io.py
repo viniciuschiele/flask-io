@@ -10,7 +10,8 @@ from .negotiation import DefaultContentNegotiation
 from .parsers import JSONParser
 from .renderers import JSONRenderer
 from .tracing import Tracer
-from .utils import errors_to_dict, http_status_message, marshal, unpack, validation_error_to_errors, Stopwatch
+from .utils import errors_to_dict, get_fields_from_request, http_status_message, marshal, unpack, \
+    validation_error_to_errors, Stopwatch
 
 
 class FlaskIO(object):
@@ -249,11 +250,15 @@ class FlaskIO(object):
         """
         A decorator that apply marshalling to the return values of your methods.
 
-        :param schema: The schema to be used to serialize the values.
+        :param schema: The schema class to be used to serialize the values.
         :param envelope: The key used to envelope the data.
         :return: A function.
         """
-        schema = schema() if isclass(schema) else schema
+
+        # schema is pre instantiated to avoid instantiate it
+        # on every request
+        schema_is_class = isclass(schema)
+        schema_cache = schema() if schema_is_class else schema
 
         def decorator(func):
             @functools.wraps(func)
@@ -261,7 +266,19 @@ class FlaskIO(object):
                 data = func(*args, **kwargs)
                 if isinstance(data, self.__app.response_class):
                     return data
-                return marshal(data, schema, envelope)
+
+                schema_instance = schema_cache
+
+                # if there is the parameter 'fields' in the url
+                # we cannot use the cached schema instance
+                # in this case we have to instantiate the schema
+                # on every request.
+                if schema_is_class:
+                    only = get_fields_from_request()
+                    if only:
+                        schema_instance = schema(only=only)
+
+                return marshal(data, schema_instance, envelope)
             return wrapper
         return decorator
 

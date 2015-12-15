@@ -1,3 +1,4 @@
+from flask import request
 from time import perf_counter
 from werkzeug.http import HTTP_STATUS_CODES
 from .errors import Error
@@ -55,6 +56,13 @@ def format_trace_data(data):
         message += '\r\n' + request_body
 
     return message
+
+
+def get_fields_from_request():
+    fields = request.args.get('fields')
+    if fields:
+        return fields.split(',')
+    return ()
 
 
 def http_status_message(code):

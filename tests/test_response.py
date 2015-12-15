@@ -69,7 +69,22 @@ class TestResponseStatus(TestCase):
         self.assertEqual(type(data.get('errors')), list)
         self.assertEqual(len(data.get('errors')), 1)
 
+    def test_fields_param(self):
+        @self.app.route('/resource', methods=['POST'])
+        @self.io.marshal_with(UserSchema, envelope='users')
+        def test():
+            return dict(username='foo', password='foo_pass')
+
+        response = self.client.post('/resource?fields=username')
+
+        data = json.loads(response.get_data(as_text=True))
+
+        users_data = data.get('users')
+
+        self.assertEqual('foo', users_data.get('username'))
+        self.assertIsNone(users_data.get('password'))
 
 
 class UserSchema(Schema):
     username = fields.String()
+    password = fields.String()
