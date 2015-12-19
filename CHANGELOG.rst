@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.9.3
+++++++++++++++++++
+- Bug fix in String field, validators were being executed when none_if_empty==True and the current value==''
+
 1.9.2
 ++++++++++++++++++
 - Add mac address validator.
