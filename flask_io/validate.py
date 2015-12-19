@@ -71,3 +71,34 @@ class Complexity(Validator):
             raise ValidationError('Must contain %s or more unique special characters' % self.special)
 
         return value
+
+
+class MACAddress(Validator):
+    """
+    Validate a MAC Address.
+    """
+
+    MAC_REGEX = re.compile('[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', re.IGNORECASE)
+
+    default_message = 'Not a valid MAC Address.'
+
+    def __init__(self, error=None):
+        """
+        Initialize a new instance of MACAddress class.
+        :param str error: Error message to raise in case of a validation error.
+            Can be interpolated with `{input}`.
+        """
+        self.error = error or self.default_message
+
+    def __call__(self, value):
+        message = self._format_error(value)
+        if not value:
+            raise ValidationError(message)
+
+        if not self.MAC_REGEX.search(value):
+            raise ValidationError(message)
+
+        return value
+
+    def _format_error(self, value):
+        return self.error.format(input=value)

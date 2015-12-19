@@ -1,4 +1,4 @@
-from flask_io.validate import Complexity, ValidationError
+from flask_io.validate import Complexity, MACAddress, ValidationError
 from unittest import TestCase
 
 
@@ -67,3 +67,13 @@ class TestComplexity(TestCase):
 
         validator = Complexity(special=2)
         self.assertRaises(ValidationError, validator, 'hell@')
+
+
+class TestMACAddress(TestCase):
+    def test_valid_mac(self):
+        validator = MACAddress()
+        self.assertEqual(validator('00-15-E9-2B-99-3C'), '00-15-E9-2B-99-3C')
+
+    def test_invalid_mac(self):
+        validator = MACAddress()
+        self.assertRaises(ValidationError, validator, '00-15-E9-2B-99-3')
