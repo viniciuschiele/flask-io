@@ -140,16 +140,14 @@ class String(fields.String):
         self.none_if_empty = self.none_if_empty if none_if_empty is None else none_if_empty
         self.only_numeric = self.only_numeric if only_numeric is None else only_numeric
 
-    def _deserialize(self, value, attr, data):
-        value = super()._deserialize(value, attr, data)
-
+    def deserialize(self, value, attr=None, data=None):
         if self.strip and value:
             value = value.strip()
 
         if self.none_if_empty and value == '':
             value = None
 
-        return value
+        return super().deserialize(value, attr, data)
 
     def _validate(self, value):
         if not self.allow_empty and value == '':
