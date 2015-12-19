@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.9.2
+++++++++++++++++++
+- Add mac address validator.
+
 1.9.1
 ++++++++++++++++++
 - Add error handle to http exception.
