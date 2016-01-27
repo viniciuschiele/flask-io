@@ -161,5 +161,29 @@ class String(fields.String):
 
         super()._validate(value)
 
+
+class UUID(fields.UUID):
+    """
+    Extends Marshmallow UUID Field to add new features.
+    """
+
+    def __init__(self, as_text=False, *args, **kwargs):
+        """
+        Initializes a new instance of 'String'.
+
+        :param bool as_text: Indicates whether the value should be converted to string.
+        """
+        super().__init__(*args, **kwargs)
+        self.as_text = as_text
+
+    def _deserialize(self, value, attr, data):
+        value_as_uuid = super()._deserialize(value, attr, data)
+
+        if self.as_text:
+            return value
+
+        return value_as_uuid
+
+
 # Aliases
 Str = String

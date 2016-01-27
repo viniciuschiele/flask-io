@@ -1,4 +1,5 @@
 from enum import Enum
+from uuid import UUID
 from flask_io import fields
 from flask_io.validate import ValidationError
 from unittest import TestCase
@@ -74,3 +75,17 @@ class TestString(TestCase):
         field = fields.String(only_numeric=True)
         self.assertEqual('12345', field.deserialize('12345'))
         self.assertRaises(ValidationError, field.deserialize, 'abcde')
+
+
+class TestUUID(TestCase):
+    def test_invalid_uuid(self):
+        field = fields.UUID()
+        self.assertRaises(ValidationError, field.deserialize, '12345')
+
+    def test_valid_uuid(self):
+        field = fields.UUID()
+        self.assertEqual(UUID('cdc9e548-d56f-4054-bf6e-650772901f35'), field.deserialize('cdc9e548-d56f-4054-bf6e-650772901f35'))
+
+    def test_as_text(self):
+        field = fields.UUID(as_text=True)
+        self.assertEqual('cdc9e548-d56f-4054-bf6e-650772901f35', field.deserialize('cdc9e548-d56f-4054-bf6e-650772901f35'))
