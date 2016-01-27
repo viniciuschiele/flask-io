@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.10.0
+++++++++++++++++++
+- Add UUID field.
+- Update marshmallow to the version 2.5.0
+
 1.9.3
 ++++++++++++++++++
 - Bug fix in String field, validators were being executed when none_if_empty==True and the current value==''
