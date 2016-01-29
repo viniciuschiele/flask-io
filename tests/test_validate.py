@@ -73,7 +73,9 @@ class TestMACAddress(TestCase):
     def test_valid_mac(self):
         validator = MACAddress()
         self.assertEqual(validator('00-15-E9-2B-99-3C'), '00-15-E9-2B-99-3C')
+        self.assertEqual(validator('00:15:E9:2B:99:3C'), '00:15:E9:2B:99:3C')
 
     def test_invalid_mac(self):
         validator = MACAddress()
         self.assertRaises(ValidationError, validator, '00-15-E9-2B-99-3')
+        self.assertRaises(ValidationError, validator, '0015E92B993C')

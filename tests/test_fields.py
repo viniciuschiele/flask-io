@@ -76,6 +76,10 @@ class TestString(TestCase):
         self.assertEqual('12345', field.deserialize('12345'))
         self.assertRaises(ValidationError, field.deserialize, 'abcde')
 
+    def test_upper(self):
+        field = fields.String(upper=True)
+        self.assertEqual('ABC', field.deserialize('abc'))
+
 
 class TestUUID(TestCase):
     def test_invalid_uuid(self):
