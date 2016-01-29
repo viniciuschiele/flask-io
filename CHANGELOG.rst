@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.10.1
+++++++++++++++++++
+- Add attribute upper to the String field.
+
 1.10.0
 ++++++++++++++++++
 - Add UUID field.
