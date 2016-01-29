@@ -117,20 +117,22 @@ class String(fields.String):
     none_if_empty = False
     strip = False
     only_numeric = False
+    upper = False
 
     default_error_messages = {
         'empty': 'Field may not be empty.',
         'only_numeric': 'Only numeric chars are allowed.'
     }
 
-    def __init__(self, allow_empty=None, none_if_empty=None, strip=None, only_numeric=None, *args, **kwargs):
+    def __init__(self, allow_empty=None, none_if_empty=None, strip=None, only_numeric=None, upper=None, *args, **kwargs):
         """
         Initializes a new instance of 'String'.
 
         :param bool allow_empty: Indicates whether the string can be empty ('').
         :param bool none_if_empty: Indicates whether the empty ('') should be considered 'None'.
         :param bool strip: Indicates whether the string should be trimmed.
-        :param bool only_numeric: Indicates whether the string should have only numbers
+        :param bool only_numeric: Indicates whether the string should have only numbers.
+        :param bool upper: Indicates whether the string should be upper case.
         :return:
         """
 
@@ -139,10 +141,14 @@ class String(fields.String):
         self.strip = self.strip if strip is None else strip
         self.none_if_empty = self.none_if_empty if none_if_empty is None else none_if_empty
         self.only_numeric = self.only_numeric if only_numeric is None else only_numeric
+        self.upper = self.upper if upper is None else upper
 
     def deserialize(self, value, attr=None, data=None):
-        if self.strip and value:
-            value = value.strip()
+        if value:
+            if self.strip:
+                value = value.strip()
+            if self.upper:
+                value = value.upper()
 
         if self.none_if_empty and value == '':
             value = None
