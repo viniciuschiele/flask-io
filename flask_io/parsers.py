@@ -2,12 +2,8 @@
 Parsers used to parse a byte array into Python object.
 """
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 from abc import ABCMeta, abstractmethod
+from flask import json
 from .mimetypes import MimeType
 
 

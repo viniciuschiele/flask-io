@@ -3,7 +3,7 @@ Renderers used to render a Python object into byte array.
 """
 
 from abc import ABCMeta, abstractmethod
-from . import json
+from flask import json
 from .mimetypes import MimeType
 
 
