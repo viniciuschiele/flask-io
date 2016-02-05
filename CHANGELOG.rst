@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.10.2
+++++++++++++++++++
+- Replaces own json by Flask json.
+- Update marshmallow to the version 2.6.0
+
 1.10.1
 ++++++++++++++++++
 - Add attribute upper to the String field.
