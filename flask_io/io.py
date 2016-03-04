@@ -182,7 +182,7 @@ class FlaskIO(object):
                 instances.append(perm)
 
         def decorator(func):
-            func.permissions = perms
+            func.permissions = instances
             return func
         return decorator
 
