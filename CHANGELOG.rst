@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.10.3
+++++++++++++++++++
+- Bug fix.
+
 1.10.2
 ++++++++++++++++++
 - Replaces own json by Flask json.
