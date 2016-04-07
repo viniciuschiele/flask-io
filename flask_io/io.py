@@ -1,4 +1,5 @@
 import functools
+import traceback
 
 from flask import request
 from inspect import isclass
@@ -314,8 +315,8 @@ class FlaskIO(object):
             error = getattr(e, 'description', http_status_message(code))
         else:
             code = 500
-            error = str(e) if self.__app.config.get('DEBUG') else http_status_message(code)
-            self.logger.error(str(e))
+            error = traceback.format_exc() if self.__app.config.get('DEBUG') else http_status_message(code)
+            self.logger.error(traceback.format_exc())
 
         errors_data = errors_to_dict(error)
 
