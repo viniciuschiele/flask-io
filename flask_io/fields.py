@@ -144,16 +144,18 @@ class String(fields.String):
         self.upper = self.upper if upper is None else upper
 
     def deserialize(self, value, attr=None, data=None):
+        if self.none_if_empty and value == '':
+            value = None
+
+        value = super().deserialize(value, attr, data)
+
         if value:
             if self.strip:
                 value = value.strip()
             if self.upper:
                 value = value.upper()
 
-        if self.none_if_empty and value == '':
-            value = None
-
-        return super().deserialize(value, attr, data)
+        return value
 
     def _validate(self, value):
         if not self.allow_empty and value == '':
