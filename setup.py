@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='flask-io',
-    version='1.10.4',
+    version='1.10.5',
     packages=['flask_io'],
     url='https://github.com/viniciuschiele/flask-io',
     license='MIT',

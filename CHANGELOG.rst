@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.10.5
+++++++++++++++++++
+- Replace the deprecated `request.data` by `request.get_data`.
+- Bug fix.
+
 1.10.4
 ++++++++++++++++++
 - Add call stack to the logs when a unhandled exception occurs.
