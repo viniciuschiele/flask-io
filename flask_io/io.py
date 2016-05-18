@@ -397,7 +397,7 @@ class FlaskIO(object):
             raise
 
     def __parse_body(self, schema):
-        if not request.data:
+        if not request.get_data():
             raise BadRequest('Payload missing.')
 
         parser, mimetype = self.content_negotiation.select_parser(request, self.default_parsers)
@@ -406,14 +406,14 @@ class FlaskIO(object):
             raise UnsupportedMediaType(request.headers['content-type'])
 
         try:
-            decoded_data = parser.parse(request.data, mimetype)
+            decoded_data = parser.parse(request.get_data(), mimetype)
         except:
             raise BadRequest('Malformed request.')
 
         model, errors = schema.load(decoded_data)
 
         if errors:
-            raise ValidationError(errors, data=request.data, location='body')
+            raise ValidationError(errors, data=request.get_data(), location='body')
 
         return model
 
