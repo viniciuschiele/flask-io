@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.11.0
+++++++++++++++++++
+- Allow user to choose the Flask version, the min version supported is 0.10.1.
+- Add support to marshmallow 2.9.1.
+
 1.10.5
 ++++++++++++++++++
 - Replace the deprecated `request.data` by `request.get_data`.
