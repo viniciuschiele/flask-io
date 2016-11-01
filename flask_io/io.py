@@ -349,7 +349,7 @@ class FlaskIO(object):
                 mimetype = default_renderer.mimetype
 
             data_bytes = renderer.render(data, mimetype)
-            data = self.__app.response_class(data_bytes, mimetype=mimetype.mimetype)
+            data = self.__app.response_class(data_bytes, mimetype=str(mimetype))
 
         if status is not None:
             data.status_code = status

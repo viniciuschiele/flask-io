@@ -49,7 +49,7 @@ class DefaultContentNegotiation(ContentNegotiation):
         if not request.content_type:
             return parsers[0], parsers[0].mimetype
 
-        mimetype = MimeType(request.content_type)
+        mimetype = MimeType.parse(request.content_type)
 
         for parser in parsers:
             if mimetype.match(parser.mimetype):
@@ -64,14 +64,13 @@ class DefaultContentNegotiation(ContentNegotiation):
         :param renderers: The lists of parsers.
         :return: The parser selected or none.
         """
-
         if not len(request.accept_mimetypes):
             return renderers[0], renderers[0].mimetype
 
         for mimetype, quality in request.accept_mimetypes:
-            accept_mimetype = MimeType(mimetype)
+            accept_mimetype = MimeType.parse(mimetype)
             for renderer in renderers:
                 if accept_mimetype.match(renderer.mimetype):
-                    return renderer, accept_mimetype
+                    return renderer, renderer.mimetype.replace(params=accept_mimetype.params)
 
         return None, None

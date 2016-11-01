@@ -30,7 +30,7 @@ class JSONRenderer(Renderer):
     Renderer which render into JSON.
     """
 
-    mimetype = MimeType('application/json')
+    mimetype = MimeType.parse('application/json')
 
     def render(self, data, mimetype):
         """
