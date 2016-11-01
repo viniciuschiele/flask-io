@@ -386,8 +386,13 @@ class FlaskIO(object):
             missing_value = field.missing
             raw_value = missing_value() if callable(missing_value) else missing_value
 
-        if raw_value is missing and not field.required:
-            raw_value = None
+            # if the missing attribute is not None
+            # it will return the value without deserializing it.
+            if raw_value is not missing:
+                return raw_value
+
+            if not field.required:
+                raw_value = None
 
         try:
             return field.deserialize(raw_value, field_name, data)
