@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.12.0
+++++++++++++++++++
+- Improve content negotiator to return the right content type.
+- Avoid deserializing missing values from fields.
+
 1.11.0
 ++++++++++++++++++
 - Allow user to choose the Flask version, the min version supported is 0.10.1.
