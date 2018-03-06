@@ -1,5 +1,6 @@
 from flask import request
 from time import perf_counter
+from marshmallow.marshalling import SCHEMA
 from werkzeug.http import HTTP_STATUS_CODES
 from .errors import Error
 
@@ -88,8 +89,15 @@ def unpack(value):
 def validation_error_to_errors(validation_error):
     errors = []
 
-    for field, error in validation_error.messages.items():
-        validation_error_to_error(field, error, validation_error.kwargs.get('location'), errors)
+    if isinstance(validation_error.messages, list):
+        field_names = validation_error.field_names or [SCHEMA]
+
+        for field in field_names:
+            validation_error_to_error(field, validation_error.messages, validation_error.kwargs.get('location'), errors)
+
+    else:
+        for field, error in validation_error.messages.items():
+            validation_error_to_error(field, error, validation_error.kwargs.get('location'), errors)
 
     return errors
 
