@@ -304,23 +304,29 @@ class FlaskIO(object):
         return decorator
 
     def __handle_error(self, e):
-        if isinstance(e, ValidationError):
-            code = 400
-            error = validation_error_to_errors(e)
-        elif isinstance(e, APIError):
-            code = e.status_code
-            error = e.error
-        elif isinstance(e, HTTPException):
-            code = e.code
-            error = getattr(e, 'description', http_status_message(code))
-        else:
-            code = 500
-            error = traceback.format_exc() if self.__app.config.get('DEBUG') else http_status_message(code)
-            self.logger.error(traceback.format_exc())
+        try:
+            data = self.__app.handle_user_exception(e)
 
-        errors_data = errors_to_dict(error)
+            return self.__make_response(data, self.default_renderers[0])
 
-        return self.__make_response((errors_data, code), self.default_renderers[0])
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                code = 400
+                error = validation_error_to_errors(e)
+            elif isinstance(e, APIError):
+                code = e.status_code
+                error = e.error
+            elif isinstance(e, HTTPException):
+                code = e.code
+                error = getattr(e, 'description', http_status_message(code))
+            else:
+                code = 500
+                error = traceback.format_exc() if self.__app.config.get('DEBUG') else http_status_message(code)
+                self.logger.error(traceback.format_exc())
+
+            errors_data = errors_to_dict(error)
+
+            return self.__make_response((errors_data, code), self.default_renderers[0])
 
     def __make_response(self, data, default_renderer=None):
         """
