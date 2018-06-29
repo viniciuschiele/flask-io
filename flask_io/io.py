@@ -40,6 +40,8 @@ class FlaskIO(object):
 
         self.tracer = Tracer(self)
 
+        self.exempt_exceptions = set()
+
         if app:
             self.init_app(app)
 
@@ -440,6 +442,8 @@ class FlaskIO(object):
                 response = self.__make_response(response)
                 return response
             except Exception as e:
+                if any(isinstance(e, exception) for exception in self.exempt_exceptions):
+                    raise e
                 error = e
                 response = self.__handle_error(e)
                 return response
