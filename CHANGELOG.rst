@@ -1,6 +1,14 @@
 Changelog
 ---------
 
+1.14.0
+++++++++++++++++++
+- Add support for custom exception handlers.
+
+1.13.0
+++++++++++++++++++
+- Handle ValidationError when it is raised outside outside of a schema context.
+
 1.12.0
 ++++++++++++++++++
 - Improve content negotiator to return the right content type.
