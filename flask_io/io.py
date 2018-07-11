@@ -276,7 +276,7 @@ class FlaskIO(object):
                 # in this case we have to instantiate the schema
                 # on every request.
                 if schema_is_class:
-                    only = get_fields_from_request()
+                    only = get_fields_from_request(schema=schema)
                     if only:
                         schema_instance = schema(only=only)
 

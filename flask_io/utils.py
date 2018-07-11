@@ -59,11 +59,18 @@ def format_trace_data(data):
     return message
 
 
-def get_fields_from_request():
+def get_fields_from_request(schema=None):
     fields = request.args.get('fields')
-    if fields:
-        return fields.split(',')
-    return ()
+    if not fields:
+        return ()
+
+    field_names = fields.split(',')
+
+    if schema:
+        declared_fields = schema._declared_fields
+        field_names = [field_name for field_name in field_names if field_name in declared_fields]
+
+    return tuple(field_names)
 
 
 def http_status_message(code):
