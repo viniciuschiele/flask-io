@@ -1,9 +1,15 @@
 Changelog
 ---------
 
+1.14.1
+++++++++++++++++++
+- Bug fix in custom exception handling.
+- Bug fix in custom fields for schema marshalling.
+
+
 1.14.0
 ++++++++++++++++++
-- Add support for custom exception handlers.
+- Add support for custom exception handling.
 
 1.13.0
 ++++++++++++++++++
