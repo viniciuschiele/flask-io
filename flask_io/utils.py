@@ -1,4 +1,6 @@
-from flask import request
+import sys
+
+from flask import request, _compat
 from time import perf_counter
 from marshmallow.marshalling import SCHEMA
 from werkzeug.http import HTTP_STATUS_CODES
@@ -86,6 +88,11 @@ def marshal(data, schema, envelope=None):
         return {envelope: data}
 
     return data
+
+
+def reraise():
+    exc_type, exc_value, tb = sys.exc_info()
+    _compat.reraise(exc_type, exc_value, tb)
 
 
 def unpack(value):

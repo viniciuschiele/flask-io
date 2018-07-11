@@ -12,7 +12,7 @@ from .negotiation import DefaultContentNegotiation
 from .parsers import JSONParser
 from .renderers import JSONRenderer
 from .tracing import Tracer
-from .utils import errors_to_dict, get_fields_from_request, http_status_message, marshal, unpack, \
+from .utils import errors_to_dict, get_fields_from_request, http_status_message, marshal, reraise, unpack, \
     validation_error_to_errors, Stopwatch
 
 
@@ -305,9 +305,12 @@ class FlaskIO(object):
 
     def __handle_error(self, e):
         try:
-            data = self.__app.handle_user_exception(e)
+            response = self.__app.handle_user_exception(e)
 
-            return self.__make_response(data, self.default_renderers[0])
+            if isinstance(response, Exception):
+                reraise()
+
+            return self.__make_response(response, self.default_renderers[0])
 
         except Exception as e:
             if isinstance(e, ValidationError):
