@@ -1,13 +1,31 @@
 import sys
+from collections import Mapping
 
 from flask import request, _compat
 from time import perf_counter
 from marshmallow.marshalling import SCHEMA
 from werkzeug.http import HTTP_STATUS_CODES
-from .errors import Error
+
+from marshmallow.exceptions import MarshmallowError
+from .errors import Error, APIError
+
+
+_VALID_ERROR_TYPES = (Error, APIError, MarshmallowError, str)
+
+
+def _validate_error_types(errors):
+    if not isinstance(errors, _VALID_ERROR_TYPES):
+        if issubclass(type(errors), list):
+            if all(issubclass(type(err), (Mapping,) + _VALID_ERROR_TYPES)
+                   for err in errors):
+                return
+        raise TypeError('Invalid error object of type: {}'.format(
+                        type(errors)))
 
 
 def errors_to_dict(errors):
+    _validate_error_types(errors)
+
     if isinstance(errors, str):
         errors = [Error(errors)]
     elif not isinstance(errors, list):
