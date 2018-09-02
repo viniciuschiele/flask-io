@@ -1,22 +1,37 @@
 import sys
+from collections import Mapping, Sequence
 
 from flask import request, _compat
 from time import perf_counter
 from marshmallow.marshalling import SCHEMA
 from werkzeug.http import HTTP_STATUS_CODES
+
 from .errors import Error
 
 
-def errors_to_dict(errors):
-    if isinstance(errors, str):
-        errors = [Error(errors)]
-    elif not isinstance(errors, list):
-        errors = [errors]
+def _raise_typeerror(error):
+    raise TypeError('Invalid error object of type {}'.format(type(error)))
 
+
+def errors_to_dict(errors):
     errors_data = []
 
-    for error in errors:
-        errors_data.append(error.as_dict())
+    if isinstance(errors, str):
+        errors_data = [Error(errors).as_dict()]
+
+    elif hasattr(errors, 'as_dict'):
+        errors_data = [errors.as_dict()]
+
+    elif isinstance(errors, Sequence) and isinstance(errors[0], Mapping):
+        errors_data = errors
+
+    elif isinstance(errors, Sequence):
+        errors_data = [error.as_dict()
+                       if hasattr(error, 'as_dict')
+                       else _raise_typeerror(error)
+                       for error in errors]
+    else:
+        _raise_typeerror(errors)
 
     return dict(errors=errors_data)
 
@@ -81,7 +96,7 @@ def http_status_message(code):
 
 def marshal(data, schema, envelope=None):
     if data is not None:
-        many = isinstance(data, list)
+        many = isinstance(data, Sequence)
         data = schema.dump(data, many=many).data
 
     if envelope:
@@ -103,7 +118,7 @@ def unpack(value):
 def validation_error_to_errors(validation_error):
     errors = []
 
-    if isinstance(validation_error.messages, list):
+    if isinstance(validation_error.messages, Sequence):
         field_names = validation_error.field_names or [SCHEMA]
 
         for field in field_names:
@@ -120,7 +135,7 @@ def validation_error_to_error(field, error, location, errors):
     if isinstance(error, dict):
         for f, e in error.items():
             validation_error_to_error(f, e, location, errors)
-    elif isinstance(error, list):
+    elif isinstance(error, Sequence):
         error = error[0]
         if isinstance(error, str):
             errors.append(Error(error, location=location, field=field))
