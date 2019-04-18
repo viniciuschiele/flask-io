@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.14.2
+++++++++++++++++++
+- Accept any marshmallow version 2.x as requirement.
+- Fix strip with none_if_empty in String field.
+
 1.14.1
 ++++++++++++++++++
 - Bug fix in custom exception handling.
@@ -13,7 +18,7 @@ Changelog
 
 1.13.0
 ++++++++++++++++++
-- Handle ValidationError when it is raised outside outside of a schema context.
+- Handle ValidationError when it is raised outside of a schema context.
 
 1.12.0
 ++++++++++++++++++
