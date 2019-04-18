@@ -143,17 +143,20 @@ class String(fields.String):
         self.only_numeric = self.only_numeric if only_numeric is None else only_numeric
         self.upper = self.upper if upper is None else upper
 
-    def deserialize(self, value, attr=None, data=None):
+    def _deserialize(self, value, attr, data):
+        value = super()._deserialize(value, attr, data)
+
+        if value is None:
+            return value
+
+        if self.strip:
+            value = value.strip()
+
         if self.none_if_empty and value == '':
-            value = None
+            return None
 
-        value = super().deserialize(value, attr, data)
-
-        if value:
-            if self.strip:
-                value = value.strip()
-            if self.upper:
-                value = value.upper()
+        if self.upper:
+            value = value.upper()
 
         return value
 
@@ -161,13 +164,14 @@ class String(fields.String):
         if not self.allow_empty and value == '':
             self.fail('empty')
 
-        if self.none_if_empty and not self.allow_none and value is None:
+        if not self.allow_none and value is None:
             self.fail('null')
 
         if self.only_numeric and value and not value.isnumeric():
             self.fail('only_numeric')
 
-        super()._validate(value)
+        if value is not None:
+            super()._validate(value)
 
 
 class UUID(fields.UUID):

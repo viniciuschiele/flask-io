@@ -71,6 +71,9 @@ class TestString(TestCase):
         field = fields.String(strip=True)
         self.assertEqual('b', field.deserialize(' b '))
 
+        field = fields.String(allow_none=True, none_if_empty=True, strip=True)
+        self.assertIsNone(field.deserialize(' '))
+
     def test_only_numeric(self):
         field = fields.String(only_numeric=True)
         self.assertEqual('12345', field.deserialize('12345'))
