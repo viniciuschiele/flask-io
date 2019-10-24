@@ -288,7 +288,7 @@ class FlaskIO(object):
                     if only:
                         schema_instance = schema(only=only)
 
-                return self.__make_response((marshal(data, schema_instance, envelope), 200, headers))
+                return marshal(data, schema_instance, envelope)
             return wrapper
         return decorator
 
