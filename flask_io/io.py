@@ -55,89 +55,96 @@ class FlaskIO(object):
 
         self.tracer.enabled = self.__app.config.get('TRACE_ENABLED', self.tracer.enabled)
 
-    def bad_request(self, error):
+    def bad_request(self, error, headers=None):
         """
         Gets a 404 response with the specified error.
 
         :param error: The error to include in the response.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
-        return self.__make_response((errors_to_dict(error), 400))
+        return self.__make_response((errors_to_dict(error), 400, headers))
 
-    def conflict(self, error):
+    def conflict(self, error, headers=None):
         """
         Gets a 409 response with the specified error.
 
         :param error: The error to include in the response.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
-        return self.__make_response((errors_to_dict(error), 409))
+        return self.__make_response((errors_to_dict(error), 409, headers))
 
-    def created(self, data, schema=None, envelope=None):
+    def created(self, data, schema=None, envelope=None, headers=None):
         """
         Gets a 201 response with the specified data.
 
         :param data: The content value.
         :param schema: The schema to serialize the data.
         :param envelope: The key used to envelope the data.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
         data = marshal(data, schema, envelope)
-        return self.__make_response((data, 201))
+        return self.__make_response((data, 201, headers))
 
-    def forbidden(self, error):
+    def forbidden(self, error, headers=None):
         """
         Gets a 403 response with the specified error.
 
         :param error: The error to include in the response.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
-        return self.__make_response((errors_to_dict(error), 403))
+        return self.__make_response((errors_to_dict(error), 403, headers))
 
-    def no_content(self):
+    def no_content(self, headers=None):
         """
         Gets a 204 response with no content.
-
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
-        return self.__make_response((None, 204))
+        return self.__make_response((None, 204, headers))
 
-    def not_found(self, error):
+    def not_found(self, error, headers=None):
         """
         Gets a 404 response with the specified error.
 
         :param error: The error to include in the response.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
-        return self.__make_response((errors_to_dict(error), 404))
+        return self.__make_response((errors_to_dict(error), 404, headers))
 
-    def ok(self, data, schema=None, envelope=None):
+    def ok(self, data, schema=None, envelope=None, headers=None):
         """
         Gets a 200 response with the specified data.
 
         :param data: The content value.
         :param schema: The schema to serialize the data.
         :param envelope: The key used to envelope the data.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
 
         data = marshal(data, schema, envelope)
-        return self.__make_response(data)
+        return self.__make_response((data, 200, headers))
 
-    def unauthorized(self, error):
+    def unauthorized(self, error, headers=None):
         """
         Gets a 401 response with the specified error.
 
         :param error: The error to include in the response.
+        :param headers: The headers to include in the response.
         :return: A Flask response object.
         """
-        return self.__make_response((errors_to_dict(error), 401))
+        return self.__make_response((errors_to_dict(error), 401, headers))
 
     def authenticators(self, auths):
         """
@@ -248,12 +255,13 @@ class FlaskIO(object):
 
         return self.__from_source(param_name, field, lambda: request.args, 'query')
 
-    def marshal_with(self, schema, envelope=None):
+    def marshal_with(self, schema, envelope=None, headers=None):
         """
         A decorator that apply marshalling to the return values of your methods.
 
         :param schema: The schema class to be used to serialize the values.
         :param envelope: The key used to envelope the data.
+        :param headers: The headers to include in the response.
         :return: A function.
         """
 
@@ -280,7 +288,7 @@ class FlaskIO(object):
                     if only:
                         schema_instance = schema(only=only)
 
-                return marshal(data, schema_instance, envelope)
+                return self.__make_response((marshal(data, schema_instance, envelope), 200, headers))
             return wrapper
         return decorator
 
