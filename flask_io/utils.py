@@ -1,5 +1,5 @@
 import sys
-from collections import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from flask import request, _compat
 from time import perf_counter
