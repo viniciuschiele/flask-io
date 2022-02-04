@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+1.14.3
+++++++++++++++++++
+- Fix deprecation warning [#6](https://github.com/viniciuschiele/flask-io/pull/6)
+
 1.14.2
 ++++++++++++++++++
 - Accept any marshmallow version 2.x as requirement.
