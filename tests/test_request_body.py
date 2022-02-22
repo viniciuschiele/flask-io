@@ -30,7 +30,7 @@ class TestRequestBody(TestCase):
             self.assertEqual(user.username, 'user1')
             self.assertEqual(user.password, 'pass1')
 
-        data = UserSchema().dump(User('user1', 'p')).data
+        data = UserSchema().dump(User('user1', 'p'))
 
         headers = {'content-type': 'application/json'}
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
@@ -44,7 +44,7 @@ class TestRequestBody(TestCase):
             self.assertEqual(user.username, 'user1')
             self.assertEqual(user.password, 'pass1')
 
-        data = UserSchema().dump(User('user1', 'pass1')).data
+        data = UserSchema().dump(User('user1', 'pass1'))
 
         headers = {'content-type': 'application/json'}
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
@@ -67,7 +67,7 @@ class TestRequestBody(TestCase):
             self.assertEqual(user.username, 'user1')
             self.assertEqual(user.password, 'pass1')
 
-        data = UserSchema().dump(User('user1', 'pass1')).data
+        data = UserSchema().dump(User('user1', 'pass1'))
 
         response = self.client.post('/resource', data=json.dumps(data))
         self.assertEqual(response.status_code, 204)
@@ -78,7 +78,7 @@ class TestRequestBody(TestCase):
         def test(user):
             pass
 
-        data = UserSchema().dump(User('user1', 'pass1')).data
+        data = UserSchema().dump(User('user1', 'pass1'))
 
         headers = {'content-type': 'application/data'}
         response = self.client.post('/resource', data=json.dumps(data), headers=headers)
@@ -114,5 +114,5 @@ class UserSchema(Schema):
     password = fields.String(validate=lambda n: len(n) >= 5)
 
     @post_load
-    def make_object(self, data):
+    def make_object(self, data, many, partial):
         return User(**data)

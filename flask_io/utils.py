@@ -3,7 +3,7 @@ from collections.abc import Mapping, Sequence
 
 from flask import request, _compat
 from time import perf_counter
-from marshmallow.marshalling import SCHEMA
+from marshmallow.exceptions import SCHEMA
 from werkzeug.http import HTTP_STATUS_CODES
 
 from .errors import Error
@@ -97,7 +97,7 @@ def http_status_message(code):
 def marshal(data, schema, envelope=None):
     if data is not None:
         many = isinstance(data, Sequence)
-        data = schema.dump(data, many=many).data
+        data = schema.dump(data, many=many)
 
     if envelope:
         return {envelope: data}

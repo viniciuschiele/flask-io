@@ -43,9 +43,9 @@ class DelimitedList(List):
         values = super()._serialize(value, attr, obj)
         return self.delimiter.join(format(v) for v in values)
 
-    def _deserialize(self, value, attr, data):
+    def _deserialize(self, value, attr, data, **kwargs):
         values = value.split(self.delimiter)
-        return super()._deserialize(values, attr, data)
+        return super()._deserialize(values, attr, data, **kwargs)
 
 
 class Enum(Field):
@@ -72,9 +72,9 @@ class Enum(Field):
                 value = self.__member_type(value)
             return self.enum_type(value).value
         except:
-            self.fail('validator_failed')
+            raise self.make_error('validator_failed')
 
-    def _deserialize(self, value, attr, data):
+    def _deserialize(self, value, attr, data, **kwargs):
         try:
             if type(value) is self.enum_type:
                 return value
@@ -82,7 +82,7 @@ class Enum(Field):
                 value = self.__member_type(value)
             return self.enum_type(value)
         except:
-            self.fail('validator_failed')
+            raise self.make_error('validator_failed')
 
 
 class Password(Field):
@@ -143,8 +143,8 @@ class String(fields.String):
         self.only_numeric = self.only_numeric if only_numeric is None else only_numeric
         self.upper = self.upper if upper is None else upper
 
-    def _deserialize(self, value, attr, data):
-        value = super()._deserialize(value, attr, data)
+    def _deserialize(self, value, attr, data, **kwargs):
+        value = super()._deserialize(value, attr, data, **kwargs)
 
         if value is None:
             return value
@@ -162,13 +162,13 @@ class String(fields.String):
 
     def _validate(self, value):
         if not self.allow_empty and value == '':
-            self.fail('empty')
+            raise self.make_error('empty')
 
         if not self.allow_none and value is None:
-            self.fail('null')
+            raise self.make_error('null')
 
         if self.only_numeric and value and not value.isnumeric():
-            self.fail('only_numeric')
+            raise self.make_error('only_numeric')
 
         if value is not None:
             super()._validate(value)
@@ -188,8 +188,8 @@ class UUID(fields.UUID):
         super().__init__(*args, **kwargs)
         self.as_text = as_text
 
-    def _deserialize(self, value, attr, data):
-        value_as_uuid = super()._deserialize(value, attr, data)
+    def _deserialize(self, value, attr, data, **kwargs):
+        value_as_uuid = super()._deserialize(value, attr, data, **kwargs)
 
         if self.as_text:
             return value
