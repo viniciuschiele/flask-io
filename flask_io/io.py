@@ -57,7 +57,7 @@ class FlaskIO(object):
 
     def bad_request(self, error):
         """
-        Gets a 404 response with the specified error.
+        Gets a 400 response with the specified error.
 
         :param error: The error to include in the response.
         :return: A Flask response object.
@@ -384,7 +384,7 @@ class FlaskIO(object):
     def __parse_field(self, field_name, field, data, location):
         field.allow_none = True
 
-        field_name = field.load_from or field_name
+        field_name = field.data_key or field_name
 
         if isinstance(field, fields.List):
             raw_value = data.getlist(field_name) or missing
@@ -392,7 +392,7 @@ class FlaskIO(object):
             raw_value = data.get(field_name) or missing
 
         if raw_value is missing:
-            missing_value = field.missing
+            missing_value = field.load_default
             raw_value = missing_value() if callable(missing_value) else missing_value
 
             # if the missing attribute is not None
@@ -424,10 +424,12 @@ class FlaskIO(object):
         except:
             raise BadRequest('Malformed request.')
 
-        model, errors = schema.load(decoded_data)
+        try:
+            model = schema.load(decoded_data)
 
-        if errors:
-            raise ValidationError(errors, data=request.get_data(), location='body')
+        except ValidationError as e:
+            e.kwargs['location'] = 'body'
+            raise
 
         return model
 

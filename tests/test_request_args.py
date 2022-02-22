@@ -44,7 +44,7 @@ class TestRequestArgs(TestCase):
 
     def test_default_value(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param1', fields.Int(missing=10))
+        @self.io.from_query('param1', fields.Int(load_default=10))
         def test(param1):
             self.assertEqual(param1, 10)
         response = self.client.get('/resource')
@@ -74,9 +74,9 @@ class TestRequestArgs(TestCase):
         response = self.client.get('/resource?param1=11')
         self.assertEqual(response.status_code, 400)
 
-    def test_load_from(self):
+    def test_data_key(self):
         @self.app.route('/resource', methods=['GET'])
-        @self.io.from_query('param2', fields.Integer(load_from='param1'))
+        @self.io.from_query('param2', fields.Integer(data_key='param1'))
         def test(param2):
             self.assertEqual(param2, 10)
         response = self.client.get('/resource?param1=10')
