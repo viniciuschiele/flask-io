@@ -1,7 +1,7 @@
 import sys
 from collections.abc import Mapping, Sequence
 
-from flask import request, _compat
+from flask import request
 from time import perf_counter
 from marshmallow.exceptions import SCHEMA
 from werkzeug.http import HTTP_STATUS_CODES
@@ -106,8 +106,10 @@ def marshal(data, schema, envelope=None):
 
 
 def reraise():
-    exc_type, exc_value, tb = sys.exc_info()
-    _compat.reraise(exc_type, exc_value, tb)
+    _, exc_value, tb = sys.exc_info()
+    if exc_value.__traceback__ is not tb:
+        raise exc_value.with_traceback(tb)
+    raise exc_value
 
 
 def unpack(value):
