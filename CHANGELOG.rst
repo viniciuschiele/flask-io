@@ -1,6 +1,12 @@
 Changelog
 ---------
 
+2.*
+++++++++++++++++++
+- Removed support for use of python versions <=3.5
+- Updated to use any Flask version 2.x
+- Updated to use any marshmallow version 3.x 
+
 1.14.3
 ++++++++++++++++++
 - Fix deprecation warning [#6](https://github.com/viniciuschiele/flask-io/pull/6)
